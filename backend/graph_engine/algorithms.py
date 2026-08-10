@@ -155,9 +155,10 @@ def dijkstra_shortest_path(graph, start_node, target_node=None):
                                      saving significant computation for A->B routing.
                                      
     Returns:
-        tuple: (distances, previous_nodes)
+        tuple: (distances, previous_nodes, visited_order)
                - distances: dict mapping node to its shortest known distance from start
                - previous_nodes: dict used to reconstruct the path
+               - visited_order: list of nodes in the exact order they were processed by Dijkstra
     """
     if not graph.has_node(start_node):
         raise ValueError(f"Start node {start_node} not found in the graph.")
@@ -174,8 +175,9 @@ def dijkstra_shortest_path(graph, start_node, target_node=None):
     # Python's heapq sorts tuples by the first element, so we push (distance, node_id)
     pq = [(0.0, start_node)]
     
-    # A set to track nodes we have 'locked in' (fully processed).
+    # A set to track nodes we have 'locked in' (fully processed), and a list to track order.
     visited = set()
+    visited_order = []
 
     while pq:
         # 2. Pop the node with the CURRENT SMALLEST distance
@@ -187,6 +189,7 @@ def dijkstra_shortest_path(graph, start_node, target_node=None):
             
         # Lock this node in. Its shortest path is guaranteed.
         visited.add(current_node)
+        visited_order.append(current_node)
         
         # Early Exit: If we reached our specific destination, we can stop evaluating the rest of the city!
         if target_node and current_node == target_node:
@@ -217,7 +220,7 @@ def dijkstra_shortest_path(graph, start_node, target_node=None):
                 # Push the new, better distance into the priority queue so it gets evaluated sooner
                 heapq.heappush(pq, (new_distance, neighbor))
                 
-    return distances, previous_nodes
+    return distances, previous_nodes, visited_order
 
 
 def reconstruct_path(previous_nodes, start_node, target_node):

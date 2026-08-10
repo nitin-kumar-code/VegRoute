@@ -1,3 +1,4 @@
+import time
 from graph_engine.graph import Graph
 from graph_engine.algorithms import dijkstra_shortest_path, reconstruct_path
 from services.db import db_service
@@ -52,7 +53,9 @@ class RoutingService:
         if not self.graph.has_node(target_node):
             raise NodeNotFoundException(target_node)
             
-        distances, prev = dijkstra_shortest_path(self.graph, start_node, target_node)
+        start_time = time.perf_counter()
+        distances, prev, visited_order = dijkstra_shortest_path(self.graph, start_node, target_node)
+        execution_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
         
         if target_node not in distances or distances[target_node] == float('infinity'):
             return None # No path exists
@@ -61,7 +64,9 @@ class RoutingService:
         
         return {
             "route": route,
-            "total_time_s": distances[target_node]
+            "total_time_s": distances[target_node],
+            "visited_nodes": visited_order,
+            "execution_time_ms": execution_time_ms
         }
 
 routing_service = RoutingService()

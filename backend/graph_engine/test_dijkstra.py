@@ -25,9 +25,10 @@ def run_tests():
     g.add_edge("Y", "Dest", weight=6)
     
     print("\nRunning Dijkstra to find quickest route to Dest...")
-    distances, prev = dijkstra_shortest_path(g, "Start", target_node="Dest")
+    distances, prev, visited_order = dijkstra_shortest_path(g, "Start", target_node="Dest")
     
     print(f"\nFinal Distance Map: {distances}")
+    print(f"Nodes Visited (Search Order): {visited_order}")
     
     route = reconstruct_path(prev, "Start", "Dest")
     print(f"Optimal Route: {' -> '.join(route)}")

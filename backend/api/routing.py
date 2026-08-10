@@ -5,21 +5,18 @@ from services.routing_service import routing_service
 
 router = APIRouter()
 
-class RouteRequest(BaseModel):
-    start_node: str = Field(..., description="The starting intersection ID")
-    target_node: str = Field(..., description="The destination intersection ID")
-
 class VegTrailRequest(BaseModel):
     start_node: str = Field(..., description="The starting intersection ID")
     # Pydantic validation: enforces the hard cap on TSP complexity
     stops: List[str] = Field(..., max_length=8, description="List of restaurant node IDs to visit (Max 8)")
     
-@router.post("/shortest")
-def get_shortest_route(request: RouteRequest):
+@router.get("/")
+def get_shortest_route(source: str, destination: str):
     """
     Calculates the fastest route between two points using Dijkstra's Algorithm.
+    Endpoint: GET /api/v1/route?source=N_123&destination=N_456
     """
-    result = routing_service.get_shortest_path(request.start_node, request.target_node)
+    result = routing_service.get_shortest_path(source, destination)
     
     if not result:
         raise HTTPException(status_code=404, detail="No valid route exists between these points.")
