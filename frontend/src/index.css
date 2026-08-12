@@ -2,22 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @layer base {
   body {
-    @apply bg-gray-900 text-gray-100 antialiased;
+    @apply bg-surface-warm text-content-primary antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  html, body, #root {
+    height: 100%;
   }
 }
 
-/* Glassmorphism Utilities */
-@layer utilities {
-  .glass {
-    @apply bg-gray-900/70 backdrop-blur-md border border-gray-700/50 shadow-xl;
+@layer components {
+  .btn-primary {
+    @apply bg-brand-900 text-white font-semibold px-6 py-3 rounded-2xl
+           hover:bg-brand-700 transition-all duration-200
+           hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-900/20
+           active:translate-y-0 active:shadow-none;
+  }
+  .btn-secondary {
+    @apply bg-white text-brand-900 font-semibold px-6 py-3 rounded-2xl
+           border border-border hover:border-brand-900/30
+           transition-all duration-200 hover:-translate-y-0.5
+           hover:shadow-lg hover:shadow-brand-900/5;
+  }
+  .section-container {
+    @apply max-w-7xl mx-auto px-6 lg:px-8;
+  }
+  .card {
+    @apply bg-white rounded-2xl border border-border
+           shadow-sm hover:shadow-md hover:-translate-y-0.5
+           transition-all duration-300;
   }
 }
 
-/* Map specific overrides for Leaflet */
+/* Leaflet overrides */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #111827; /* Tailwind gray-900 */
+  background: #F7F5EF;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid #DDE5DD;
+}
+
+.leaflet-popup-content {
+  margin: 14px 18px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Pulse animation for user marker */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
 }

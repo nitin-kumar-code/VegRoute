@@ -1,0 +1,79 @@
+import { Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import { MOCK_RESTAURANTS } from '../restaurants/restaurantData';
+
+/**
+ * RestaurantMarkers — Color-coded restaurant pins on the Leaflet map.
+ * Uses SVG divIcon markers colored by purity level per the new brand palette.
+ */
+
+const PURITY_COLORS = {
+  pure_veg: '#3E8E5B',
+  jain_friendly: '#D99A2B',
+  veg: '#1F5D45',
+};
+
+function createRestaurantIcon(purityLevel) {
+  const color = PURITY_COLORS[purityLevel] || '#3E8E5B';
+  return L.divIcon({
+    className: '',
+    html: `
+      <svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z" 
+              fill="${color}" stroke="white" stroke-width="2"/>
+        <circle cx="14" cy="13" r="6" fill="white" opacity="0.9"/>
+        <text x="14" y="16" text-anchor="middle" font-size="10" fill="${color}">🌿</text>
+      </svg>
+    `,
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -36],
+  });
+}
+
+const PURITY_LABELS = {
+  pure_veg: 'Pure Veg',
+  jain_friendly: 'Jain Friendly',
+  veg: 'Veg',
+};
+
+export default function RestaurantMarkers() {
+  return (
+    <>
+      {MOCK_RESTAURANTS.map((restaurant) => (
+        <Marker
+          key={restaurant.id}
+          position={[restaurant.lat, restaurant.lng]}
+          icon={createRestaurantIcon(restaurant.purity)}
+        >
+          <Popup>
+            <div style={{ minWidth: '180px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: '#17201B', marginBottom: '4px' }}>
+                {restaurant.name}
+              </div>
+              <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{
+                  display: 'inline-block',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  background: restaurant.purity === 'pure_veg' ? '#3E8E5B20' : '#D99A2B20',
+                  color: restaurant.purity === 'pure_veg' ? '#3E8E5B' : '#D99A2B',
+                }}>
+                  {PURITY_LABELS[restaurant.purity]}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#66736A' }}>
+                ⭐ {restaurant.rating} &nbsp;·&nbsp; 🛡️ {restaurant.trust_score} verifications
+              </div>
+              <div style={{ fontSize: '11px', color: '#66736A', marginTop: '6px' }}>
+                Graph Node: <code style={{ background: '#EEF3EC', padding: '1px 4px', borderRadius: '4px' }}>{restaurant.nearest_node}</code>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}

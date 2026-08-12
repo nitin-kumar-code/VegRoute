@@ -1,0 +1,64 @@
+import { MapContainer, TileLayer, ZoomControl } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import UserMarker from './UserMarker';
+import RestaurantMarkers from './RestaurantMarkers';
+import RouteLayer from './RouteLayer';
+import MapController from './MapController';
+
+/**
+ * LeafletMap — The Core Map Container
+ * 
+ * This is the foundational component that initializes the OpenStreetMap tile layer
+ * and composes all child layers (markers, polylines, controls) on top of it.
+ * 
+ * Architecture:
+ * - MapContainer: The root Leaflet instance. It creates the internal Leaflet `map` object
+ *   and provides it to all children via React Context. We set `zoomControl={false}` here
+ *   because we reposition it manually to the bottom-right for a cleaner UI.
+ * - TileLayer: This is the actual image tiles from OpenStreetMap's CDN. Each tile is a 
+ *   256x256 pixel PNG loaded dynamically as you pan/zoom. The `{s}` placeholder rotates
+ *   between subdomains (a, b, c) to parallelize tile downloads across CDN servers.
+ * - ZoomControl: Leaflet's built-in +/- zoom buttons, repositioned to bottom-right 
+ *   so they don't collide with the glassmorphism sidebar on the left.
+ * - Child Components: UserMarker, RestaurantMarkers, RouteLayer are layered on top
+ *   of the tile layer, each managing their own Leaflet primitives.
+ */
+export default function LeafletMap() {
+  return (
+    <MapContainer
+      center={[23.8315, 91.2868]}   // Default center: Agartala, Tripura
+      zoom={14}                       // Street-level zoom for a city routing app
+      zoomControl={false}             // We add our own ZoomControl below
+      className="w-full h-full z-0"   // Fill the parent container, sit behind UI overlays
+      attributionControl={true}       // Required by OSM license
+    >
+      {/* 
+        TileLayer: The actual map imagery.
+        OpenStreetMap is free, requires attribution, and has no API key.
+        The URL template uses {z}/{x}/{y} — standard "slippy map" tile addressing:
+          z = zoom level (0-19)
+          x = column index at that zoom
+          y = row index at that zoom
+      */}
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      {/* Repositioned zoom buttons */}
+      <ZoomControl position="bottomright" />
+
+      {/* Syncs the Zustand store's camera state with the Leaflet map instance */}
+      <MapController />
+
+      {/* The user's live GPS position */}
+      <UserMarker />
+
+      {/* All restaurant pins with custom icons */}
+      <RestaurantMarkers />
+
+      {/* The Dijkstra route polyline and visited-node visualization */}
+      <RouteLayer />
+    </MapContainer>
+  );
+}
