@@ -14,10 +14,18 @@ export default function RestaurantCard({ restaurant }) {
     <div className="card overflow-hidden group">
       {/* Image */}
       <div className="relative h-44 bg-surface-secondary overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
-        <div className="absolute inset-0 flex items-center justify-center text-content-secondary/30">
-          <MapPin size={40} />
-        </div>
+        {restaurant.image ? (
+          <img 
+            src={restaurant.image} 
+            alt={restaurant.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-content-secondary/30">
+            <MapPin size={40} />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
         {/* Purity Badge */}
         <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${badge.color}`}>
           {badge.label}

@@ -12,6 +12,7 @@ export const MOCK_RESTAURANTS = [
     distance: '1.2 km',
     time: '5 min',
     nearest_node: 'N_001',
+    image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'R_002',
@@ -26,6 +27,7 @@ export const MOCK_RESTAURANTS = [
     distance: '0.8 km',
     time: '3 min',
     nearest_node: 'N_005',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'R_003',
@@ -40,6 +42,7 @@ export const MOCK_RESTAURANTS = [
     distance: '2.1 km',
     time: '8 min',
     nearest_node: 'N_010',
+    image: 'https://images.unsplash.com/photo-1626776876729-bab4369a5a5a?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'R_004',
@@ -54,6 +57,7 @@ export const MOCK_RESTAURANTS = [
     distance: '1.8 km',
     time: '6 min',
     nearest_node: 'N_012',
+    image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
   },
   {
     id: 'R_005',
@@ -68,6 +72,7 @@ export const MOCK_RESTAURANTS = [
     distance: '3.2 km',
     time: '12 min',
     nearest_node: 'N_020',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'R_006',
@@ -82,5 +87,6 @@ export const MOCK_RESTAURANTS = [
     distance: '1.5 km',
     time: '5 min',
     nearest_node: 'N_008',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80',
   },
 ];
