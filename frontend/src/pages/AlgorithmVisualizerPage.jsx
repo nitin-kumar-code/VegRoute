@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, RotateCcw, Zap, Clock, Database, GitBranch } from 'lucide-react';
+import { Play, RotateCcw, Zap, Target } from 'lucide-react';
 import SectionHeading from '../components/ui/SectionHeading';
 
 const ALGORITHMS = [
+  { id: 'dijkstra', label: 'Dijkstra', complexity: 'O((V+E) log V)', space: 'O(V)' },
   { id: 'bfs', label: 'BFS', complexity: 'O(V + E)', space: 'O(V)' },
   { id: 'dfs', label: 'DFS', complexity: 'O(V + E)', space: 'O(V)' },
-  { id: 'dijkstra', label: 'Dijkstra', complexity: 'O((V+E) log V)', space: 'O(V)' },
 ];
 
-// Simple graph layout for visualization
 const GRAPH_NODES = [
   { id: 'A', x: 80, y: 200, label: 'Start' },
   { id: 'B', x: 180, y: 100 },
@@ -30,15 +29,20 @@ const GRAPH_EDGES = [
   { from: 'G', to: 'I', w: 3 }, { from: 'H', to: 'I', w: 4 },
 ];
 
+const INIT_DISTANCES = { A: Infinity, B: Infinity, C: Infinity, D: Infinity, E: Infinity, F: Infinity, G: Infinity, H: Infinity, I: Infinity };
+
+// Pre-computed exact steps of Dijkstra execution on the above graph.
 const DIJKSTRA_STEPS = [
-  { current: 'A', visited: ['A'], distances: { A: 0, B: 4, C: 2, D: Infinity, E: Infinity, F: Infinity, G: Infinity, H: Infinity, I: Infinity }, path: [] },
-  { current: 'C', visited: ['A', 'C'], distances: { A: 0, B: 4, C: 2, D: Infinity, E: 10, F: 12, G: Infinity, H: Infinity, I: Infinity }, path: [] },
-  { current: 'B', visited: ['A', 'C', 'B'], distances: { A: 0, B: 4, C: 2, D: 9, E: 5, F: 12, G: Infinity, H: Infinity, I: Infinity }, path: [] },
-  { current: 'E', visited: ['A', 'C', 'B', 'E'], distances: { A: 0, B: 4, C: 2, D: 9, E: 5, F: 12, G: 11, H: 8, I: Infinity }, path: [] },
-  { current: 'H', visited: ['A', 'C', 'B', 'E', 'H'], distances: { A: 0, B: 4, C: 2, D: 9, E: 5, F: 12, G: 11, H: 8, I: 12 }, path: [] },
-  { current: 'D', visited: ['A', 'C', 'B', 'E', 'H', 'D'], distances: { A: 0, B: 4, C: 2, D: 9, E: 5, F: 12, G: 11, H: 8, I: 12 }, path: [] },
-  { current: 'G', visited: ['A', 'C', 'B', 'E', 'H', 'D', 'G'], distances: { A: 0, B: 4, C: 2, D: 9, E: 5, F: 12, G: 11, H: 8, I: 12 }, path: [] },
-  { current: 'I', visited: ['A', 'C', 'B', 'E', 'H', 'D', 'G', 'I'], distances: { A: 0, B: 4, C: 2, D: 9, E: 5, F: 12, G: 11, H: 8, I: 12 }, path: ['A', 'B', 'E', 'H', 'I'] },
+  { current: null, visited: [], evaluating: [], distances: { ...INIT_DISTANCES, A: 0 }, pq: [{ node: 'A', dist: 0 }], path: [] },
+  { current: 'A', visited: ['A'], evaluating: ['B', 'C'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2 }, pq: [{ node: 'C', dist: 2 }, { node: 'B', dist: 4 }], path: [] },
+  { current: 'C', visited: ['A', 'C'], evaluating: ['E', 'F'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 10, F: 12 }, pq: [{ node: 'B', dist: 4 }, { node: 'E', dist: 10 }, { node: 'F', dist: 12 }], path: [] },
+  { current: 'B', visited: ['A', 'C', 'B'], evaluating: ['D', 'E'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12 }, pq: [{ node: 'E', dist: 5 }, { node: 'D', dist: 9 }, { node: 'F', dist: 12 }], path: [] },
+  { current: 'E', visited: ['A', 'C', 'B', 'E'], evaluating: ['G', 'H'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12, G: 11, H: 8 }, pq: [{ node: 'H', dist: 8 }, { node: 'D', dist: 9 }, { node: 'G', dist: 11 }, { node: 'F', dist: 12 }], path: [] },
+  { current: 'H', visited: ['A', 'C', 'B', 'E', 'H'], evaluating: ['I'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12, G: 11, H: 8, I: 12 }, pq: [{ node: 'D', dist: 9 }, { node: 'G', dist: 11 }, { node: 'F', dist: 12 }, { node: 'I', dist: 12 }], path: [] },
+  { current: 'D', visited: ['A', 'C', 'B', 'E', 'H', 'D'], evaluating: ['G'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12, G: 11, H: 8, I: 12 }, pq: [{ node: 'G', dist: 11 }, { node: 'F', dist: 12 }, { node: 'I', dist: 12 }], path: [] },
+  { current: 'G', visited: ['A', 'C', 'B', 'E', 'H', 'D', 'G'], evaluating: ['I'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12, G: 11, H: 8, I: 12 }, pq: [{ node: 'F', dist: 12 }, { node: 'I', dist: 12 }], path: [] },
+  { current: 'F', visited: ['A', 'C', 'B', 'E', 'H', 'D', 'G', 'F'], evaluating: ['H'], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12, G: 11, H: 8, I: 12 }, pq: [{ node: 'I', dist: 12 }], path: [] },
+  { current: 'I', visited: ['A', 'C', 'B', 'E', 'H', 'D', 'G', 'F', 'I'], evaluating: [], distances: { ...INIT_DISTANCES, A: 0, B: 4, C: 2, E: 5, D: 9, F: 12, G: 11, H: 8, I: 12 }, pq: [], path: ['A', 'B', 'E', 'H', 'I'] },
 ];
 
 function getNodePos(id) {
@@ -50,73 +54,89 @@ export default function AlgorithmVisualizerPage() {
   const [stepIndex, setStepIndex] = useState(-1);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
+  
+  // Previous distances ref for highlighting changed rows
+  const prevDistRef = useRef(null);
 
   const algoInfo = ALGORITHMS.find((a) => a.id === algo);
-  const step = stepIndex >= 0 && stepIndex < DIJKSTRA_STEPS.length ? DIJKSTRA_STEPS[stepIndex] : null;
+  const stepsData = algo === 'dijkstra' ? DIJKSTRA_STEPS : []; // Placeholder for BFS/DFS steps
+  const step = stepIndex >= 0 && stepIndex < stepsData.length ? stepsData[stepIndex] : null;
+
+  // Track previous step to animate table flashes
+  useEffect(() => {
+    if (step) prevDistRef.current = step.distances;
+  }, [step]);
 
   const reset = useCallback(() => {
     setStepIndex(-1);
     setIsRunning(false);
+    prevDistRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
   const run = useCallback(() => {
     reset();
     setIsRunning(true);
-    let i = 0;
+    
+    // Functional state update inside interval to avoid stale closures
     timerRef.current = setInterval(() => {
-      if (i >= DIJKSTRA_STEPS.length) {
-        clearInterval(timerRef.current);
-        setIsRunning(false);
-        return;
-      }
-      setStepIndex(i);
-      i++;
-    }, 800);
-  }, [reset]);
+      setStepIndex((currentIdx) => {
+        const nextIdx = currentIdx + 1;
+        if (nextIdx >= stepsData.length) {
+          clearInterval(timerRef.current);
+          setIsRunning(false);
+          return currentIdx; // Stop at last step
+        }
+        return nextIdx;
+      });
+    }, 1200); // 1.2s per step to allow UI to be read
+  }, [reset, stepsData.length]);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
   const getNodeColor = (id) => {
-    if (!step) return '#B8C5BB';
-    if (step.path.includes(id)) return '#7CB342';
-    if (id === step.current) return '#12372A';
-    if (step.visited.includes(id)) return '#A8D66D';
+    if (!step) return '#B8C5BB'; // Gray
+    if (step.path.includes(id)) return '#7CB342'; // Route Green
+    if (id === step.current) return '#12372A'; // Dark Green (Processing)
+    if (step.evaluating.includes(id)) return '#D99A2B'; // Amber (Evaluating)
+    if (step.visited.includes(id)) return '#A8D66D'; // Light Green (Settled)
     return '#B8C5BB';
   };
 
-  const getEdgeColor = (from, to) => {
-    if (!step) return '#DDE5DD';
+  const getEdgeStyle = (from, to) => {
+    if (!step) return { color: '#DDE5DD', width: 2, dash: 'none' };
+    
+    // Final Path
     if (step.path.length > 1) {
       for (let i = 0; i < step.path.length - 1; i++) {
         if ((step.path[i] === from && step.path[i+1] === to) || (step.path[i] === to && step.path[i+1] === from)) {
-          return '#7CB342';
+          return { color: '#7CB342', width: 4, dash: 'none' };
         }
       }
     }
-    if (step.visited.includes(from) && step.visited.includes(to)) return '#A8D66D';
-    return '#DDE5DD';
-  };
-
-  const getEdgeWidth = (from, to) => {
-    if (!step || step.path.length <= 1) return 2;
-    for (let i = 0; i < step.path.length - 1; i++) {
-      if ((step.path[i] === from && step.path[i+1] === to) || (step.path[i] === to && step.path[i+1] === from)) {
-        return 4;
-      }
+    
+    // Currently Evaluating edge
+    if (step.current === from && step.evaluating.includes(to)) {
+      return { color: '#D99A2B', width: 3, dash: '4 4' };
     }
-    return 2;
+    
+    // Settled Edge
+    if (step.visited.includes(from) && step.visited.includes(to)) {
+       return { color: '#A8D66D', width: 2, dash: 'none' };
+    }
+    
+    return { color: '#DDE5DD', width: 2, dash: 'none' };
   };
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="section-container">
+    <div className="min-h-screen py-12 bg-surface-warm">
+      <div className="section-container max-w-7xl">
         <SectionHeading
-          badge="Algorithm Visualizer"
-          title="See the Graph in Action"
-          subtitle="Understand how graph algorithms find their way through Agartala."
+          badge="Educational Tool"
+          title="Inside the Algorithm"
+          subtitle="Watch how algorithms discover the shortest path through a network."
         />
 
         {/* Controls */}
@@ -143,104 +163,146 @@ export default function AlgorithmVisualizerPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Graph Visualization */}
-          <div className="lg:col-span-2 card p-6">
-            <svg viewBox="0 0 620 400" className="w-full" style={{ maxHeight: '440px' }}>
-              {/* Edges */}
-              {GRAPH_EDGES.map((e) => {
-                const from = getNodePos(e.from);
-                const to = getNodePos(e.to);
-                const mx = (from.x + to.x) / 2;
-                const my = (from.y + to.y) / 2;
-                return (
-                  <g key={`${e.from}-${e.to}`}>
-                    <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                      stroke={getEdgeColor(e.from, e.to)}
-                      strokeWidth={getEdgeWidth(e.from, e.to)}
-                      strokeLinecap="round"
-                      style={{ transition: 'stroke 0.4s, stroke-width 0.4s' }}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          
+          {/* Left Column: Graph Visualization */}
+          <div className="xl:col-span-2 space-y-6">
+            <div className="card p-6 bg-white shadow-sm border border-border rounded-2xl relative overflow-hidden">
+              {/* Overlay processing label */}
+              {step && step.current && (
+                 <div className="absolute top-4 left-4 bg-brand-900 text-white text-xs px-3 py-1.5 rounded-full shadow-md">
+                   Processing Node {step.current}
+                 </div>
+              )}
+              
+              <svg viewBox="0 0 620 380" className="w-full" style={{ maxHeight: '420px' }}>
+                {/* Edges */}
+                {GRAPH_EDGES.map((e) => {
+                  const from = getNodePos(e.from);
+                  const to = getNodePos(e.to);
+                  const mx = (from.x + to.x) / 2;
+                  const my = (from.y + to.y) / 2;
+                  const style = getEdgeStyle(e.from, e.to);
+                  return (
+                    <g key={`${e.from}-${e.to}`}>
+                      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                        stroke={style.color}
+                        strokeWidth={style.width}
+                        strokeDasharray={style.dash}
+                        strokeLinecap="round"
+                        style={{ transition: 'stroke 0.4s, stroke-width 0.4s' }}
+                      />
+                      <rect x={mx - 10} y={my - 10} width={20} height={20} fill="white" rx={10} />
+                      <text x={mx} y={my + 4} textAnchor="middle" fontSize="11" fill="#66736A" fontWeight="600">{e.w}</text>
+                    </g>
+                  );
+                })}
+                
+                {/* Nodes */}
+                {GRAPH_NODES.map((node) => (
+                  <g key={node.id}>
+                    <circle cx={node.x} cy={node.y} r={node.label ? 22 : 16}
+                      fill={getNodeColor(node.id)}
+                      stroke="white" strokeWidth="3"
+                      style={{ transition: 'fill 0.4s' }}
                     />
-                    <text x={mx} y={my - 8} textAnchor="middle" fontSize="11" fill="#66736A" fontWeight="500">{e.w}</text>
+                    <text x={node.x} y={node.y + 5} textAnchor="middle"
+                      fontSize="12" fontWeight="700" fill="white">{node.id}</text>
+                    {node.label && (
+                      <text x={node.x} y={node.y + 40} textAnchor="middle"
+                        fontSize="10" fontWeight="600" fill="#12372A">{node.label}</text>
+                    )}
                   </g>
-                );
-              })}
-              {/* Nodes */}
-              {GRAPH_NODES.map((node) => (
-                <g key={node.id}>
-                  <circle cx={node.x} cy={node.y} r={node.label ? 22 : 16}
-                    fill={getNodeColor(node.id)}
-                    stroke="white" strokeWidth="3"
-                    style={{ transition: 'fill 0.4s' }}
-                  />
-                  <text x={node.x} y={node.y + 5} textAnchor="middle"
-                    fontSize="12" fontWeight="700" fill="white">{node.id}</text>
-                  {node.label && (
-                    <text x={node.x} y={node.y + 40} textAnchor="middle"
-                      fontSize="10" fontWeight="600" fill="#12372A">{node.label}</text>
-                  )}
-                </g>
-              ))}
-            </svg>
+                ))}
+              </svg>
+            </div>
+
+            {/* PQ Visualizer (Min-Heap display) */}
+            <div className="card p-5 bg-white">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-3 flex items-center gap-2">
+                <Target size={14} /> Priority Queue (Min-Heap Array)
+              </h3>
+              <div className="flex items-center gap-3 overflow-x-auto pb-2 min-h-[64px]">
+                {!step ? (
+                   <span className="text-sm text-content-secondary italic">Queue is empty</span>
+                ) : step.pq.length === 0 ? (
+                   <span className="text-sm text-status-success font-semibold">Queue empty (Done)</span>
+                ) : (
+                  step.pq.map((item, idx) => (
+                    <div key={item.node} 
+                         className={`flex flex-col items-center justify-center min-w-[60px] h-14 rounded-xl border-2 transition-all ${
+                           idx === 0 ? 'border-brand-900 bg-brand-900 text-white shadow-md' : 'border-border bg-surface-secondary text-content-primary'
+                         }`}>
+                      <span className="text-sm font-bold">{item.node}</span>
+                      <span className={`text-[10px] ${idx === 0 ? 'text-brand-light' : 'text-content-secondary'}`}>dist: {item.dist}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Info Panel */}
-          <div className="space-y-4">
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-3">Algorithm</h3>
-              <div className="flex items-center gap-2 mb-3">
-                <Zap size={18} className="text-brand-accent" />
-                <span className="text-lg font-bold text-content-primary">{algoInfo.label}</span>
+          {/* Right Column: State & Distance Table */}
+          <div className="space-y-6">
+            
+            <div className="card p-0 overflow-hidden bg-white">
+              <div className="bg-surface-secondary px-5 py-4 border-b border-border">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-content-primary">Distance Table</h3>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-content-secondary">Time</span><span className="font-mono font-semibold text-content-primary">{algoInfo.complexity}</span></div>
-                <div className="flex justify-between"><span className="text-content-secondary">Space</span><span className="font-mono font-semibold text-content-primary">{algoInfo.space}</span></div>
-              </div>
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-content-secondary uppercase bg-surface-warm/50">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Node</th>
+                    <th className="px-5 py-3 font-semibold">Distance</th>
+                    <th className="px-5 py-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {GRAPH_NODES.map((node) => {
+                    const dist = step ? step.distances[node.id] : Infinity;
+                    const prevDist = prevDistRef.current ? prevDistRef.current[node.id] : dist;
+                    const changed = step && dist !== prevDist;
+                    const settled = step && step.visited.includes(node.id);
+                    
+                    return (
+                      <tr key={node.id} 
+                          className={`transition-colors duration-500 ${
+                            changed ? 'bg-brand-accent/20' : 
+                            settled ? 'bg-surface-warm text-content-secondary' : 'bg-white'
+                          }`}>
+                        <td className="px-5 py-2.5 font-bold flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${settled ? 'bg-brand-light' : step?.current === node.id ? 'bg-brand-900' : 'bg-border'}`} />
+                          {node.id}
+                        </td>
+                        <td className={`px-5 py-2.5 font-mono font-medium ${changed ? 'text-brand-900 scale-110' : ''} transition-transform`}>
+                          {dist === Infinity ? '∞' : dist}
+                        </td>
+                        <td className="px-5 py-2.5 text-xs">
+                          {settled ? 'Settled' : step?.evaluating.includes(node.id) ? 'Updating...' : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-3">Current State</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-content-secondary">Current Node</span><span className="font-mono font-bold text-brand-900">{step ? step.current : '—'}</span></div>
-                <div className="flex justify-between"><span className="text-content-secondary">Step</span><span className="font-mono font-bold">{step ? `${stepIndex + 1} / ${DIJKSTRA_STEPS.length}` : '—'}</span></div>
-                <div className="flex justify-between"><span className="text-content-secondary">Distance</span><span className="font-mono font-bold">{step ? (step.distances[step.current] === Infinity ? '∞' : step.distances[step.current]) : '—'}</span></div>
-              </div>
-            </div>
-
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-3">Visited Nodes</h3>
-              <div className="flex flex-wrap gap-2">
-                {step ? step.visited.map((v) => (
-                  <span key={v} className="text-xs font-mono font-semibold bg-brand-light/20 text-brand-900 px-2.5 py-1 rounded-lg">{v}</span>
-                )) : <span className="text-content-secondary text-sm">Run the algorithm to begin</span>}
-              </div>
-            </div>
-
+            {/* Path Result Box */}
             {step && step.path.length > 0 && (
               <div className="card p-5 border-brand-accent/30 bg-brand-accent/5">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-brand-accent mb-3">Shortest Path Found!</h3>
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap mb-2">
                   {step.path.map((p, i) => (
                     <span key={p} className="flex items-center gap-1.5">
-                      <span className="text-sm font-mono font-bold text-brand-900">{p}</span>
-                      {i < step.path.length - 1 && <span className="text-brand-accent">→</span>}
+                      <span className="text-sm font-mono font-bold text-brand-900 bg-white px-2 py-0.5 rounded shadow-sm">{p}</span>
+                      {i < step.path.length - 1 && <span className="text-brand-accent font-bold">→</span>}
                     </span>
                   ))}
                 </div>
-                <p className="text-sm text-content-secondary mt-2">Total Distance: <strong className="text-brand-900">{step.distances['I']}</strong></p>
+                <p className="text-sm text-content-primary">Total Distance: <strong className="text-brand-900 font-mono text-base">{step.distances['I']}</strong></p>
               </div>
             )}
-
-            {/* Legend */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-3">Legend</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-graph-edge" /> Unvisited</div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-graph-node" /> Processing</div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-graph-visited" /> Visited</div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-graph-route" /> Shortest Path</div>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>
