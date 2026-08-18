@@ -173,6 +173,41 @@ const BFS_STEPS = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────
+// DFS STEPS — Call Stack (LIFO)
+// Each step: { current, visited, evaluating, stack, traversal, parent, path, explanation }
+//
+// DFS ignores edge weights entirely. It explores by plunging as
+// deep as possible along each branch before backtracking.
+// It uses a Stack (typically the call stack via recursion).
+// ─────────────────────────────────────────────────────────────
+const DFS_STEPS = [
+  {
+    current: null, visited: [], evaluating: [], stack: [], traversal: [], parent: { A: null }, path: [],
+    explanation: 'Initialize: Start at source node A. The call stack is currently empty.',
+  },
+  {
+    current: 'A', visited: ['A'], evaluating: ['B'], stack: ['A'], traversal: ['A'], parent: { A: null }, path: [],
+    explanation: 'Call DFS(A). Push A to the stack and mark it visited. Examine its first neighbor, B.',
+  },
+  {
+    current: 'B', visited: ['A', 'B'], evaluating: ['D'], stack: ['A', 'B'], traversal: ['A', 'B'], parent: { A: null, B: 'A' }, path: [],
+    explanation: 'DFS plunges deep immediately! Call DFS(B). Push B to the stack without checking A\'s other neighbors yet. Examine B\'s neighbor, D.',
+  },
+  {
+    current: 'D', visited: ['A', 'B', 'D'], evaluating: ['G'], stack: ['A', 'B', 'D'], traversal: ['A', 'B', 'D'], parent: { A: null, B: 'A', D: 'B' }, path: [],
+    explanation: 'Call DFS(D). Push D to the stack. The recursion goes deeper. Examine D\'s neighbor, G.',
+  },
+  {
+    current: 'G', visited: ['A', 'B', 'D', 'G'], evaluating: ['I'], stack: ['A', 'B', 'D', 'G'], traversal: ['A', 'B', 'D', 'G'], parent: { A: null, B: 'A', D: 'B', G: 'D' }, path: [],
+    explanation: 'Call DFS(G). Push G to the stack. Examine G\'s neighbor, I. We notice I is our destination node!',
+  },
+  {
+    current: 'I', visited: ['A', 'B', 'D', 'G', 'I'], evaluating: [], stack: ['A', 'B', 'D', 'G', 'I'], traversal: ['A', 'B', 'D', 'G', 'I'], parent: { A: null, B: 'A', D: 'B', G: 'D', I: 'G' }, path: ['A', 'B', 'D', 'G', 'I'],
+    explanation: 'Call DFS(I). Push I to the stack. Destination reached! DFS stops and returns the path. Notice how it blindly followed the first branch down. DFS does NOT guarantee the optimal shortest path.',
+  },
+];
+
 function getNodePos(id) {
   return GRAPH_NODES.find((n) => n.id === id);
 }
@@ -185,7 +220,7 @@ export default function AlgorithmVisualizerPage() {
   const prevStepRef = useRef(null);
 
   const algoInfo = ALGORITHMS.find((a) => a.id === algo);
-  const stepsData = algo === 'dijkstra' ? DIJKSTRA_STEPS : algo === 'bfs' ? BFS_STEPS : [];
+  const stepsData = algo === 'dijkstra' ? DIJKSTRA_STEPS : algo === 'bfs' ? BFS_STEPS : algo === 'dfs' ? DFS_STEPS : [];
   const step = stepIndex >= 0 && stepIndex < stepsData.length ? stepsData[stepIndex] : null;
 
   // Track previous step for table flash animations
@@ -251,7 +286,6 @@ export default function AlgorithmVisualizerPage() {
 
   const renderQueuePanel = () => {
     if (algo === 'dijkstra') {
-      // Priority Queue: sorted by distance, shows dist value
       const pq = step?.pq || [];
       return (
         <div className="card p-5 bg-white">
@@ -283,7 +317,6 @@ export default function AlgorithmVisualizerPage() {
     }
 
     if (algo === 'bfs') {
-      // FIFO Queue: plain node names, first-in-first-out order
       const queue = step?.queue || [];
       return (
         <div className="card p-5 bg-white">
@@ -314,6 +347,45 @@ export default function AlgorithmVisualizerPage() {
           </div>
           {queue.length > 0 && (
             <p className="text-[11px] text-content-secondary mt-2">← Front (next to dequeue) · New nodes enter from the right →</p>
+          )}
+        </div>
+      );
+    }
+
+    if (algo === 'dfs') {
+      const stack = step?.stack || [];
+      return (
+        <div className="card p-5 bg-white">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-content-secondary mb-3 flex items-center gap-2">
+            <Layers size={14} /> Call Stack (LIFO)
+          </h3>
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 min-h-[64px]">
+            {!step ? (
+               <span className="text-sm text-content-secondary italic">Run the algorithm to begin</span>
+            ) : stack.length === 0 ? (
+               <span className="text-sm text-status-success font-semibold">Stack empty — algorithm complete</span>
+            ) : (
+              <div className="flex items-center gap-2">
+                {stack.map((nodeId, idx) => {
+                  const isTop = idx === stack.length - 1;
+                  return (
+                    <div key={nodeId} className="flex items-center gap-2">
+                      <div className={`flex items-center justify-center min-w-[48px] h-12 rounded-xl border-2 transition-all ${
+                        isTop
+                          ? 'border-brand-900 bg-brand-900 text-white shadow-md transform scale-110'
+                          : 'border-border bg-surface-secondary text-content-secondary'
+                      }`}>
+                        <span className="text-sm font-bold px-2">{nodeId}</span>
+                      </div>
+                      {!isTop && <span className="text-border mx-1">|</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {stack.length > 0 && (
+            <p className="text-[11px] text-content-secondary mt-2">Bottom of stack ← · → <strong className="text-brand-900">Top of stack</strong> (currently executing)</p>
           )}
         </div>
       );
@@ -419,6 +491,56 @@ export default function AlgorithmVisualizerPage() {
       );
     }
 
+    if (algo === 'dfs') {
+      return (
+        <div className="card p-0 overflow-hidden bg-white">
+          <div className="bg-surface-secondary px-5 py-4 border-b border-border">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-content-primary">DFS Traversal Tracker</h3>
+          </div>
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs text-content-secondary uppercase bg-surface-warm/50">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Node</th>
+                <th className="px-4 py-3 font-semibold">Traversal Order</th>
+                <th className="px-4 py-3 font-semibold">Parent</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {GRAPH_NODES.map((node) => {
+                const visitedIndex = step?.traversal.indexOf(node.id);
+                const isVisited = visitedIndex !== undefined && visitedIndex !== -1;
+                const parent = step?.parent?.[node.id];
+                const prevVisited = prevStepRef.current?.traversal.includes(node.id);
+                const justVisited = step && isVisited && !prevVisited;
+                return (
+                  <tr key={node.id}
+                      className={`transition-colors duration-500 ${
+                        justVisited ? 'bg-brand-accent/20' :
+                        isVisited ? 'bg-surface-warm text-content-secondary' : 'bg-white'
+                      }`}>
+                    <td className="px-4 py-2.5 font-bold flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${isVisited ? 'bg-brand-light' : step?.current === node.id ? 'bg-brand-900' : 'bg-border'}`} />
+                      {node.id}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono font-medium">
+                      {isVisited ? `#${visitedIndex + 1}` : '—'}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-content-secondary">
+                      {parent !== undefined ? (parent === null ? 'src' : parent) : '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {step?.current === node.id ? 'Top of Stack' : isVisited ? 'Visited' : 'Unvisited'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -429,7 +551,7 @@ export default function AlgorithmVisualizerPage() {
     return (
       <div className="card p-5 border-brand-accent/30 bg-brand-accent/5">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-brand-accent mb-3">
-          {isDijkstra ? 'Shortest Path Found!' : 'Shortest-Hop Path Found!'}
+          {isDijkstra ? 'Shortest Path Found!' : 'Path Found!'}
         </h3>
         <div className="flex items-center gap-1.5 flex-wrap mb-2">
           {step.path.map((p, i) => (
@@ -463,16 +585,13 @@ export default function AlgorithmVisualizerPage() {
             <button
               key={a.id}
               onClick={() => { setAlgo(a.id); reset(); }}
-              disabled={a.id === 'dfs'}
               className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
                 algo === a.id
                   ? 'bg-brand-900 text-white shadow-md'
-                  : a.id === 'dfs'
-                  ? 'bg-white text-content-secondary/40 border border-border cursor-not-allowed'
                   : 'bg-white text-content-secondary border border-border hover:border-brand-900/30'
               }`}
             >
-              {a.label} {a.id === 'dfs' && '(Soon)'}
+              {a.label}
             </button>
           ))}
           <div className="w-px h-8 bg-border mx-2 hidden sm:block" />
