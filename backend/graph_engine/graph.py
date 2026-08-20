@@ -11,6 +11,7 @@ class Graph:
         """
         self.adj_list = {}
         self.reverse_adj_list = {}
+        self.node_data = {}  # Store lat/lng for heuristic calculations
         self.directed = directed
 
     def has_node(self, node):
@@ -24,11 +25,14 @@ class Graph:
         """
         return self.adj_list.get(node, {})
 
-    def add_node(self, node):
-        """Adds a new node to the graph if it doesn't already exist."""
+    def add_node(self, node, data=None):
+        """Adds a new node to the graph if it doesn't already exist, and stores optional node data."""
         if not self.has_node(node):
             self.adj_list[node] = {}
             self.reverse_adj_list[node] = {}
+            self.node_data[node] = data or {}
+        elif data:
+            self.node_data[node].update(data)
 
     def add_edge(self, from_node, to_node, weight=1.0, distance_m=0.0, avg_travel_time_s=0.0, road_class="unknown"):
         """
@@ -94,6 +98,8 @@ class Graph:
         # 3. Finally, wipe the node itself from both lists
         del self.adj_list[node]
         del self.reverse_adj_list[node]
+        if node in self.node_data:
+            del self.node_data[node]
 
     def print_graph(self):
         """Prints the graph to the console in a readable format."""

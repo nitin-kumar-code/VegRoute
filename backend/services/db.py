@@ -36,6 +36,17 @@ class DatabaseService:
                 """, (node_id,))
                 return cur.fetchone()
 
+    def get_all_intersections(self):
+        """Fetches all intersections to load spatial data into the Graph Engine."""
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT node_id, lat, lng FROM intersections")
+                    return cur.fetchall()
+        except Exception as e:
+            print(f"Failed to load intersections from DB. Error: {e}")
+            return []
+
     # ==========================================
     # ROADS (EDGES / GRAPH DATA)
     # ==========================================
@@ -95,6 +106,21 @@ class DatabaseService:
                     WHERE r.restaurant_id = %s
                 """, (restaurant_id,))
                 return cur.fetchone()
+
+    def refresh_restaurant_stats(self):
+        """
+        Refreshes the materialized view 'restaurant_stats' to update trust scores and ratings.
+        This can be scheduled via a background job or triggered by an admin endpoint.
+        """
+        try:
+            with self._get_connection() as conn:
+                with conn.cursor() as cur:
+                    # CONCURRENTLY allows the view to be read while it is refreshing
+                    cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY restaurant_stats;")
+            return True
+        except Exception as e:
+            print(f"Failed to refresh materialized view: {e}")
+            return False
 
     # ==========================================
     # SPATIAL QUERIES

@@ -242,3 +242,94 @@ def reconstruct_path(previous_nodes, start_node, target_node):
         
     # Reverse it so it reads Start -> ... -> Target
     return path[::-1]
+
+import math
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees)
+    Returns distance in meters.
+    """
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a)) 
+    r = 6371000 # Radius of earth in meters
+    return c * r
+
+def astar_shortest_path(graph, start_node, target_node):
+    """
+    Finds the shortest path from start_node to target_node using A* Search.
+    Uses Haversine distance as an admissible heuristic to guide the search.
+    """
+    if not graph.has_node(start_node):
+        raise ValueError(f"Start node {start_node} not found in the graph.")
+    if not graph.has_node(target_node):
+        raise ValueError(f"Target node {target_node} not found in the graph.")
+
+    # Get target coordinates for heuristic
+    target_data = graph.node_data.get(target_node, {})
+    target_lat = target_data.get('lat')
+    target_lng = target_data.get('lng')
+    
+    if target_lat is None or target_lng is None:
+        # Fallback to Dijkstra if node data is missing
+        print("Warning: Missing lat/lng data for A* target. Falling back to Dijkstra.")
+        return dijkstra_shortest_path(graph, start_node, target_node)
+
+    distances = {node: float('infinity') for node in graph.adj_list}
+    distances[start_node] = 0.0
+    previous_nodes = {node: None for node in graph.adj_list}
+    
+    # Priority Queue elements: (f_score, distance_so_far, node_id)
+    # f_score = distance_so_far + heuristic
+    pq = [(0.0, 0.0, start_node)]
+    
+    visited = set()
+    visited_order = []
+
+    while pq:
+        current_f, current_distance, current_node = heapq.heappop(pq)
+        
+        if current_node in visited:
+            continue
+            
+        visited.add(current_node)
+        visited_order.append(current_node)
+        
+        if current_node == target_node:
+            break
+            
+        neighbors = graph.get_neighbors(current_node)
+        for neighbor, edge_data in neighbors.items():
+            if neighbor in visited:
+                continue
+                
+            weight = edge_data.get("weight", float('infinity'))
+            assert weight >= 0, f"Negative edge weight found on {current_node}->{neighbor}!"
+            
+            new_distance = current_distance + weight
+            
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                previous_nodes[neighbor] = current_node
+                
+                # Calculate heuristic (h)
+                neighbor_data = graph.node_data.get(neighbor, {})
+                n_lat = neighbor_data.get('lat')
+                n_lng = neighbor_data.get('lng')
+                
+                h = 0.0
+                if n_lat is not None and n_lng is not None:
+                    # Heuristic is in meters. If edge weight is in seconds (travel time),
+                    # we must convert meters to seconds (assume e.g. 50km/h = ~13.8m/s speed limit).
+                    # For admissibility, use the maximum possible speed to ensure we never overestimate.
+                    # Assuming max speed 120km/h = 33.3m/s in Agartala.
+                    h = haversine_distance(n_lat, n_lng, target_lat, target_lng) / 33.3
+                
+                f_score = new_distance + h
+                heapq.heappush(pq, (f_score, new_distance, neighbor))
+                
+    return distances, previous_nodes, visited_order

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Star, MapPin, Clock, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -7,7 +8,7 @@ const PURITY_BADGE = {
   veg: { label: 'Veg', color: 'bg-blue-50 text-blue-600' },
 };
 
-export default function RestaurantCard({ restaurant }) {
+const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
   const badge = PURITY_BADGE[restaurant.purity] || PURITY_BADGE.pure_veg;
 
   return (
@@ -76,4 +77,6 @@ export default function RestaurantCard({ restaurant }) {
       </div>
     </div>
   );
-}
+});
+
+export default RestaurantCard;

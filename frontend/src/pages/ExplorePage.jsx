@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import { FixedSizeGrid as Grid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import SectionHeading from '../components/ui/SectionHeading';
 import FilterPill from '../components/ui/FilterPill';
 import RestaurantCard from '../features/restaurants/RestaurantCard';
@@ -35,13 +37,10 @@ export default function ExplorePage() {
     results.sort((a, b) => {
       switch (activeSort) {
         case 'Nearest':
-          // Extract float from strings like "1.2 km"
           return parseFloat(a.distance) - parseFloat(b.distance);
         case 'Highest Rated':
-          // Descending order for rating
           return b.rating - a.rating;
         case 'Cheapest':
-          // Compare price string length ('₹' < '₹₹' < '₹₹₹')
           return a.price.length - b.price.length;
         default:
           return 0; // 'Default' maintains original array order
@@ -51,9 +50,24 @@ export default function ExplorePage() {
     return results;
   }, [activeFilter, activeSort, searchQuery]);
 
+  // Cell renderer for react-window Grid
+  const Cell = ({ columnIndex, rowIndex, style, data }) => {
+    const { items, columnCount } = data;
+    const itemIndex = rowIndex * columnCount + columnIndex;
+    const restaurant = items[itemIndex];
+
+    if (!restaurant) return null; // Empty cell for uneven rows
+
+    return (
+      <div style={{ ...style, padding: '0 12px 24px 12px' }}>
+        <RestaurantCard restaurant={restaurant} />
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen py-12">
-      <div className="section-container">
+    <div className="min-h-screen py-12 flex flex-col h-screen">
+      <div className="section-container flex-none">
         <SectionHeading
           badge="Discover"
           title="Explore vegetarian spots in Agartala"
@@ -109,14 +123,35 @@ export default function ExplorePage() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Restaurant Grid */}
+      {/* Virtualized Restaurant Grid */}
+      <div className="section-container flex-1 min-h-[500px]">
         {processedRestaurants.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {processedRestaurants.map((r) => (
-              <RestaurantCard key={r.id} restaurant={r} />
-            ))}
-          </div>
+          <AutoSizer>
+            {({ height, width }) => {
+              // Responsive column count based on width
+              const columnCount = width > 1024 ? 3 : width > 768 ? 2 : 1;
+              const columnWidth = width / columnCount;
+              const rowCount = Math.ceil(processedRestaurants.length / columnCount);
+              const rowHeight = 360; // Card height + padding
+
+              return (
+                <Grid
+                  className="no-scrollbar"
+                  columnCount={columnCount}
+                  columnWidth={columnWidth}
+                  height={height}
+                  rowCount={rowCount}
+                  rowHeight={rowHeight}
+                  width={width}
+                  itemData={{ items: processedRestaurants, columnCount }}
+                >
+                  {Cell}
+                </Grid>
+              );
+            }}
+          </AutoSizer>
         ) : (
           <div className="text-center py-16 text-content-secondary">
             <p className="text-lg">No restaurants found matching your criteria.</p>

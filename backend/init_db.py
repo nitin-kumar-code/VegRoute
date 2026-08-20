@@ -12,8 +12,8 @@ def init_db():
         cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
         
         print("Dropping existing tables if they exist (for clean rebuild)...")
-        # Drop view first because it depends on tables
-        cur.execute("DROP VIEW IF EXISTS restaurant_stats;")
+        # Drop materialized view first because it depends on tables
+        cur.execute("DROP MATERIALIZED VIEW IF EXISTS restaurant_stats;")
         cur.execute("DROP TABLE IF EXISTS reviews CASCADE;")
         cur.execute("DROP TABLE IF EXISTS restaurants CASCADE;")
         cur.execute("DROP TABLE IF EXISTS roads CASCADE;")
@@ -76,9 +76,9 @@ def init_db():
             CREATE INDEX idx_reviews_restaurant ON reviews(restaurant_id);
         """)
         
-        print("Creating 'restaurant_stats' View...")
+        print("Creating 'restaurant_stats' Materialized View...")
         cur.execute("""
-            CREATE VIEW restaurant_stats AS
+            CREATE MATERIALIZED VIEW restaurant_stats AS
             SELECT 
                 r.restaurant_id,
                 COUNT(DISTINCT v.device_id) FILTER (WHERE v.confirms_purity = true) AS trust_score,
@@ -87,6 +87,8 @@ def init_db():
             FROM restaurants r
             LEFT JOIN reviews v ON r.restaurant_id = v.restaurant_id
             GROUP BY r.restaurant_id;
+            
+            CREATE UNIQUE INDEX idx_restaurant_stats_id ON restaurant_stats(restaurant_id);
         """)
         
         print("Database schema initialization complete!")
