@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Leaf, MapPin } from 'lucide-react';
+import { Menu, X, MapPin } from 'lucide-react';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
@@ -17,11 +17,8 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-border">
       <div className="section-container flex items-center justify-between h-16">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-brand-900 rounded-lg flex items-center justify-center">
-            <Leaf size={18} className="text-brand-light" />
-          </div>
-          <span className="text-lg font-bold text-brand-900">VegRoute</span>
+        <Link to="/" className="flex items-center group">
+          <img src="/logo.png" alt="VegRoute Logo" className="h-12" />
         </Link>
 
         {/* Desktop Nav */}

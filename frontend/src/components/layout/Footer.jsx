@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Leaf } from 'lucide-react';
+
 
 export default function Footer() {
   return (
@@ -9,10 +9,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
-                <Leaf size={16} className="text-brand-light" />
-              </div>
-              <span className="text-base font-bold text-white">VegRoute</span>
+              <img src="/logo.png" alt="VegRoute Logo" className="h-12" />
             </div>
             <p className="text-sm leading-relaxed">
               Graph-based vegetarian restaurant discovery<br />
