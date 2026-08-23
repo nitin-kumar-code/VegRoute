@@ -10,27 +10,17 @@ import { useMapStore } from '../../context/useMapStore';
  *   - #7CB342 (brand-accent): Final shortest path
  */
 
-const NODE_COORDS = {
-  'N_001': [23.8365, 91.2750],
-  'N_003': [23.8340, 91.2780],
-  'N_005': [23.8290, 91.2810],
-  'N_007': [23.8310, 91.2860],
-  'N_010': [23.8340, 91.2920],
-  'N_012': [23.8270, 91.2880],
-  'N_015': [23.8320, 91.2900],
-  'N_020': [23.8400, 91.2830],
-};
-
 export default function RouteLayer() {
   const activeRoute = useMapStore((state) => state.activeRoute);
   const visitedNodes = useMapStore((state) => state.visitedNodes);
 
+  // routeCoords should be an array of [lat, lng] arrays for Polyline
   const routeCoords = activeRoute
-    ? activeRoute.map((nodeId) => NODE_COORDS[nodeId]).filter(Boolean)
+    ? activeRoute.map((node) => [node.lat, node.lng])
     : [];
 
   const visitedCoords = visitedNodes
-    ? visitedNodes.map((nodeId) => ({ id: nodeId, coords: NODE_COORDS[nodeId] })).filter((n) => n.coords)
+    ? visitedNodes.map((node) => ({ id: node.id, coords: [node.lat, node.lng] }))
     : [];
 
   if (routeCoords.length === 0 && visitedCoords.length === 0) return null;

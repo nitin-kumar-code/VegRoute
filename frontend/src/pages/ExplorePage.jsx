@@ -3,12 +3,13 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import SectionHeading from '../components/ui/SectionHeading';
 import FilterPill from '../components/ui/FilterPill';
 import RestaurantCard from '../features/restaurants/RestaurantCard';
-import { MOCK_RESTAURANTS } from '../features/restaurants/restaurantData';
+import { useMapStore } from '../context/useMapStore';
 
 const FILTERS = ['All', 'Pure Veg', 'South Indian', 'North Indian', 'Jain', 'Budget (₹)', 'Highly Rated (4.3+)'];
 const SORTS = ['Default', 'Nearest', 'Highest Rated', 'Cheapest'];
 
 export default function ExplorePage() {
+  const restaurants = useMapStore((state) => state.restaurants);
   const [activeFilter, setActiveFilter] = useState('All');
   const [activeSort, setActiveSort] = useState('Default');
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,15 +17,17 @@ export default function ExplorePage() {
   // useMemo ensures we only recalculate filtering and sorting when the dependencies change
   const processedRestaurants = useMemo(() => {
     // 1. FILTERING LOGIC
-    let results = MOCK_RESTAURANTS.filter((r) => {
+    let results = restaurants.filter((r) => {
       const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
       if (!matchesSearch) return false;
 
+      const purity = r.pure_veg ? 'pure_veg' : r.jain_available ? 'jain_friendly' : 'veg';
+
       switch (activeFilter) {
-        case 'Pure Veg': return r.purity === 'pure_veg';
-        case 'Jain': return r.purity === 'jain_friendly';
-        case 'South Indian': return r.cuisine === 'South Indian';
-        case 'North Indian': return r.cuisine === 'North Indian';
+        case 'Pure Veg': return purity === 'pure_veg';
+        case 'Jain': return purity === 'jain_friendly';
+        case 'South Indian': return r.south_indian;
+        case 'North Indian': return r.north_indian;
         case 'Budget (₹)': return r.price === '₹';
         case 'Highly Rated (4.3+)': return r.rating >= 4.3;
         default: return true; // 'All'
@@ -36,20 +39,20 @@ export default function ExplorePage() {
       switch (activeSort) {
         case 'Nearest':
           // Extract float from strings like "1.2 km"
-          return parseFloat(a.distance) - parseFloat(b.distance);
+          return (a.distance ? parseFloat(a.distance) : 1) - (b.distance ? parseFloat(b.distance) : 1);
         case 'Highest Rated':
           // Descending order for rating
           return b.rating - a.rating;
         case 'Cheapest':
           // Compare price string length ('₹' < '₹₹' < '₹₹₹')
-          return a.price.length - b.price.length;
+          return (a.price ? a.price.length : 0) - (b.price ? b.price.length : 0);
         default:
           return 0; // 'Default' maintains original array order
       }
     });
 
     return results;
-  }, [activeFilter, activeSort, searchQuery]);
+  }, [restaurants, activeFilter, activeSort, searchQuery]);
 
   return (
     <div className="min-h-screen py-12">

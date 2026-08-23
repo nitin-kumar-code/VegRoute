@@ -20,17 +20,17 @@ class DatabaseService:
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    INSERT INTO intersections (node_id, lat, lng, geom, type) 
-                    VALUES (%s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s)
+                    INSERT INTO intersections (node_id, lat, lng, type) 
+                    VALUES (%s, %s, %s, %s)
                     RETURNING node_id
-                """, (node_id, lat, lng, lng, lat, type)) # ST_MakePoint takes (lng, lat)
+                """, (node_id, lat, lng, type))
                 return cur.fetchone()
 
     def get_intersection(self, node_id: str):
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT node_id, lat, lng, type, ST_AsGeoJSON(geom) as geometry 
+                    SELECT node_id, lat, lng, type
                     FROM intersections 
                     WHERE node_id = %s
                 """, (node_id,))
@@ -51,14 +51,14 @@ class DatabaseService:
     # ROADS (EDGES / GRAPH DATA)
     # ==========================================
 
-    def create_road(self, edge_id, from_node, to_node, distance_m, travel_time, road_class, is_one_way, name, wkt_geom):
+    def create_road(self, edge_id, from_node, to_node, distance_m, travel_time, road_class, is_one_way, name):
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    INSERT INTO roads (edge_id, from_node_id, to_node_id, distance_m, avg_travel_time_s, road_class, is_one_way, name, geom) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))
+                    INSERT INTO roads (edge_id, from_node_id, to_node_id, distance_m, avg_travel_time_s, road_class, is_one_way, name) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING edge_id
-                """, (edge_id, from_node, to_node, distance_m, travel_time, road_class, is_one_way, name, wkt_geom))
+                """, (edge_id, from_node, to_node, distance_m, travel_time, road_class, is_one_way, name))
                 return cur.fetchone()
 
     def get_all_edges(self):
@@ -86,10 +86,10 @@ class DatabaseService:
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    INSERT INTO restaurants (restaurant_id, name, nearest_node_id, snap_distance_m, purity_level, geom) 
-                    VALUES (%s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326))
+                    INSERT INTO restaurants (restaurant_id, name, nearest_node_id, snap_distance_m, pure_veg, lat, lng) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING restaurant_id
-                """, (rest_id, name, nearest_node, snap_dist, purity, lng, lat))
+                """, (rest_id, name, nearest_node, snap_dist, purity == 'pure_veg', lat, lng))
                 return cur.fetchone()
 
     def get_restaurant(self, restaurant_id: str):
@@ -99,7 +99,7 @@ class DatabaseService:
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT r.restaurant_id, r.name, r.purity_level, ST_AsGeoJSON(r.geom) as geometry, 
+                    SELECT r.restaurant_id, r.name, r.pure_veg, r.lat, r.lng, 
                            s.trust_score, s.rating_avg, s.rating_count
                     FROM restaurants r
                     LEFT JOIN restaurant_stats s ON r.restaurant_id = s.restaurant_id
@@ -128,23 +128,23 @@ class DatabaseService:
 
     def find_restaurants_within_radius(self, lat: float, lng: float, radius_meters: float):
         """
-        Finds all restaurants within a physical real-world radius.
-        Uses ::geography casting to ensure distance is measured spherically in meters, 
-        not linearly in planar degrees.
+        Finds all restaurants within a physical real-world radius using the Haversine formula in pure SQL.
         """
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT r.restaurant_id, r.name, r.purity_level, ST_AsGeoJSON(r.geom) as geometry, 
+                    SELECT r.restaurant_id, r.name, r.pure_veg, r.lat, r.lng, 
                            s.trust_score, s.rating_avg
                     FROM restaurants r
                     LEFT JOIN restaurant_stats s ON r.restaurant_id = s.restaurant_id
-                    WHERE ST_DWithin(
-                        r.geom::geography, 
-                        ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 
-                        %s
-                    )
-                """, (lng, lat, radius_meters)) # ST_MakePoint is always (lng, lat)
+                    WHERE r.lat IS NOT NULL AND r.lng IS NOT NULL
+                      AND (
+                        6371000 * acos(
+                            cos(radians(r.lat)) * cos(radians(%s)) * cos(radians(%s) - radians(r.lng)) + 
+                            sin(radians(r.lat)) * sin(radians(%s))
+                        )
+                      ) <= %s
+                """, (lat, lng, lat, radius_meters))
                 return cur.fetchall()
 
     def verify_snap_distances(self, restaurant_ids: list):
@@ -162,9 +162,11 @@ class DatabaseService:
                     SELECT 
                         r.restaurant_id,
                         r.nearest_node_id,
-                        ST_Distance(
-                            r.geom::geography,
-                            i.geom::geography
+                        (
+                            6371000 * acos(
+                                cos(radians(r.lat)) * cos(radians(i.lat)) * cos(radians(i.lng) - radians(r.lng)) + 
+                                sin(radians(r.lat)) * sin(radians(i.lat))
+                            )
                         ) as calculated_distance_m
                     FROM restaurants r
                     JOIN intersections i ON r.nearest_node_id = i.node_id

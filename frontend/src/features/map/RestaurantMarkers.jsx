@@ -37,14 +37,20 @@ const PURITY_LABELS = {
   veg: 'Veg',
 };
 
+import { useMapStore } from '../../context/useMapStore';
+
 export default function RestaurantMarkers() {
+  const restaurants = useMapStore((state) => state.restaurants);
+  
   return (
     <>
-      {MOCK_RESTAURANTS.map((restaurant) => (
+      {restaurants.map((restaurant) => {
+        const purity = restaurant.pure_veg ? 'pure_veg' : restaurant.jain_available ? 'jain_friendly' : 'veg';
+        return (
         <Marker
           key={restaurant.id}
           position={[restaurant.lat, restaurant.lng]}
-          icon={createRestaurantIcon(restaurant.purity)}
+          icon={createRestaurantIcon(purity)}
         >
           <Popup>
             <div style={{ minWidth: '180px', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -58,22 +64,22 @@ export default function RestaurantMarkers() {
                   borderRadius: '12px',
                   fontSize: '11px',
                   fontWeight: 600,
-                  background: restaurant.purity === 'pure_veg' ? '#3E8E5B20' : '#D99A2B20',
-                  color: restaurant.purity === 'pure_veg' ? '#3E8E5B' : '#D99A2B',
+                  background: purity === 'pure_veg' ? '#3E8E5B20' : '#D99A2B20',
+                  color: purity === 'pure_veg' ? '#3E8E5B' : '#D99A2B',
                 }}>
-                  {PURITY_LABELS[restaurant.purity]}
+                  {PURITY_LABELS[purity]}
                 </span>
               </div>
               <div style={{ fontSize: '12px', color: '#66736A' }}>
-                ⭐ {restaurant.rating} &nbsp;·&nbsp; 🛡️ {restaurant.trust_score} verifications
+                ⭐ {restaurant.rating} &nbsp;·&nbsp; 🛡️ {restaurant.trust_score || 0} verifications
               </div>
               <div style={{ fontSize: '11px', color: '#66736A', marginTop: '6px' }}>
-                Graph Node: <code style={{ background: '#EEF3EC', padding: '1px 4px', borderRadius: '4px' }}>{restaurant.nearest_node}</code>
+                Graph Node: <code style={{ background: '#EEF3EC', padding: '1px 4px', borderRadius: '4px' }}>{restaurant.nearest_node_id}</code>
               </div>
             </div>
           </Popup>
         </Marker>
-      ))}
+      )})}
     </>
   );
 }

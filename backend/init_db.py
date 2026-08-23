@@ -8,11 +8,8 @@ def init_db():
         conn.autocommit = True
         cur = conn.cursor()
         
-        print("Enabling PostGIS extension...")
-        cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
-        
+        # 1. Reset Tables
         print("Dropping existing tables if they exist (for clean rebuild)...")
-        # Drop materialized view first because it depends on tables
         cur.execute("DROP MATERIALIZED VIEW IF EXISTS restaurant_stats;")
         cur.execute("DROP TABLE IF EXISTS reviews CASCADE;")
         cur.execute("DROP TABLE IF EXISTS restaurants CASCADE;")
@@ -22,79 +19,104 @@ def init_db():
         print("Creating 'intersections' table...")
         cur.execute("""
             CREATE TABLE intersections (
-                node_id VARCHAR(255) PRIMARY KEY,
-                lat FLOAT NOT NULL,
-                lng FLOAT NOT NULL,
-                geom GEOMETRY(Point, 4326),
+                node_id VARCHAR(50) PRIMARY KEY,
+                lat DOUBLE PRECISION NOT NULL,
+                lng DOUBLE PRECISION NOT NULL,
                 type VARCHAR(50)
             );
-            CREATE INDEX idx_intersections_geom ON intersections USING GIST (geom);
+            CREATE INDEX idx_intersections_lat_lng ON intersections(lat, lng);
         """)
-        
-        print("Creating 'roads' table...")
+
+        print("Creating 'roads' table (edges)...")
         cur.execute("""
             CREATE TABLE roads (
-                edge_id VARCHAR(255) PRIMARY KEY,
-                from_node_id VARCHAR(255) REFERENCES intersections(node_id) ON DELETE RESTRICT,
-                to_node_id VARCHAR(255) REFERENCES intersections(node_id) ON DELETE RESTRICT,
-                distance_m FLOAT NOT NULL,
-                avg_travel_time_s FLOAT NOT NULL,
+                edge_id VARCHAR(100) PRIMARY KEY,
+                from_node_id VARCHAR(50) REFERENCES intersections(node_id) ON DELETE CASCADE,
+                to_node_id VARCHAR(50) REFERENCES intersections(node_id) ON DELETE CASCADE,
+                distance_m DOUBLE PRECISION NOT NULL,
+                avg_travel_time_s DOUBLE PRECISION NOT NULL,
                 road_class VARCHAR(50),
                 is_one_way BOOLEAN DEFAULT FALSE,
-                name VARCHAR(255),
-                geom GEOMETRY(LineString, 4326)
+                name VARCHAR(255)
             );
-            CREATE INDEX idx_roads_geom ON roads USING GIST (geom);
             CREATE INDEX idx_roads_from_node ON roads(from_node_id);
+            CREATE INDEX idx_roads_to_node ON roads(to_node_id);
         """)
-        
-        print("Creating 'restaurants' table...")
+
+        print("Creating 'restaurants' table with extended attributes...")
         cur.execute("""
             CREATE TABLE restaurants (
-                restaurant_id VARCHAR(255) PRIMARY KEY,
+                restaurant_id VARCHAR(50) PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                nearest_node_id VARCHAR(255) REFERENCES intersections(node_id),
-                snap_distance_m FLOAT,
-                purity_level VARCHAR(50),
-                opening_hours JSONB,
-                data_source VARCHAR(50),
-                geom GEOMETRY(Point, 4326)
+                address TEXT,
+                locality VARCHAR(100),
+                lat DOUBLE PRECISION,
+                lng DOUBLE PRECISION,
+                
+                restaurant_type VARCHAR(50),
+                pure_veg BOOLEAN DEFAULT FALSE,
+                veg_friendly BOOLEAN DEFAULT FALSE,
+                jain_available BOOLEAN DEFAULT FALSE,
+                jain_friendly BOOLEAN DEFAULT FALSE,
+                south_indian BOOLEAN DEFAULT FALSE,
+                north_indian BOOLEAN DEFAULT FALSE,
+                bengali_tripuri BOOLEAN DEFAULT FALSE,
+                other_cuisines TEXT,
+                
+                rating DOUBLE PRECISION,
+                review_count INTEGER DEFAULT 0,
+                price_range VARCHAR(20),
+                opening_hours TEXT,
+                phone VARCHAR(50),
+                website TEXT,
+                delivery_links TEXT,
+                image_url TEXT,
+                source VARCHAR(50),
+                verification_info TEXT,
+                
+                nearest_node_id VARCHAR(50) REFERENCES intersections(node_id) ON DELETE SET NULL,
+                snap_distance_m DOUBLE PRECISION
             );
-            CREATE INDEX idx_restaurants_geom ON restaurants USING GIST (geom);
-            CREATE INDEX idx_restaurants_purity ON restaurants(purity_level);
+            CREATE INDEX idx_restaurants_lat_lng ON restaurants(lat, lng);
+            CREATE INDEX idx_restaurants_purity ON restaurants(pure_veg, jain_available);
         """)
-        
+
         print("Creating 'reviews' table...")
         cur.execute("""
             CREATE TABLE reviews (
-                review_id VARCHAR(255) PRIMARY KEY,
-                restaurant_id VARCHAR(255) REFERENCES restaurants(restaurant_id) ON DELETE CASCADE,
-                device_id VARCHAR(255) NOT NULL,
-                confirms_purity BOOLEAN NOT NULL,
-                rating INTEGER CHECK (rating >= 1 AND rating <= 5)
+                review_id SERIAL PRIMARY KEY,
+                restaurant_id VARCHAR(50) REFERENCES restaurants(restaurant_id) ON DELETE CASCADE,
+                user_id VARCHAR(50),
+                rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+                is_verified_veg BOOLEAN DEFAULT FALSE,
+                comment TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX idx_reviews_restaurant ON reviews(restaurant_id);
         """)
-        
-        print("Creating 'restaurant_stats' Materialized View...")
+
+        print("Creating Materialized View 'restaurant_stats'...")
         cur.execute("""
             CREATE MATERIALIZED VIEW restaurant_stats AS
             SELECT 
                 r.restaurant_id,
-                COUNT(DISTINCT v.device_id) FILTER (WHERE v.confirms_purity = true) AS trust_score,
-                ROUND(AVG(v.rating), 1) AS rating_avg,
-                COUNT(v.review_id) AS rating_count
+                COUNT(rev.review_id) as rating_count,
+                ROUND(AVG(rev.rating), 1) as rating_avg,
+                (
+                    SUM(CASE WHEN rev.is_verified_veg THEN 1 ELSE 0 END) * 10 
+                    + COUNT(rev.review_id) * 2 
+                    + (CASE WHEN r.pure_veg THEN 50 ELSE 0 END)
+                ) as trust_score
             FROM restaurants r
-            LEFT JOIN reviews v ON r.restaurant_id = v.restaurant_id
-            GROUP BY r.restaurant_id;
+            LEFT JOIN reviews rev ON r.restaurant_id = rev.restaurant_id
+            GROUP BY r.restaurant_id, r.pure_veg;
             
-            CREATE UNIQUE INDEX idx_restaurant_stats_id ON restaurant_stats(restaurant_id);
+            CREATE UNIQUE INDEX idx_mv_rest_id ON restaurant_stats(restaurant_id);
         """)
-        
-        print("Database schema initialization complete!")
         
         cur.close()
         conn.close()
+        print("Database initialized successfully!")
         
     except Exception as e:
         print(f"Error initializing database: {e}")

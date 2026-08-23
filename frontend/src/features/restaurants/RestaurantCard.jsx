@@ -9,7 +9,9 @@ const PURITY_BADGE = {
 };
 
 const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
-  const badge = PURITY_BADGE[restaurant.purity] || PURITY_BADGE.pure_veg;
+  const purity = restaurant.pure_veg ? 'pure_veg' : restaurant.jain_available ? 'jain_friendly' : 'veg';
+  const badge = PURITY_BADGE[purity] || PURITY_BADGE.pure_veg;
+  const cuisine = restaurant.south_indian ? 'South Indian' : restaurant.north_indian ? 'North Indian' : restaurant.bengali_tripuri ? 'Bengali' : 'Indian';
 
   return (
     <div className="card overflow-hidden group">
@@ -50,7 +52,7 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
             {restaurant.rating}
           </span>
           <span>•</span>
-          <span>{restaurant.cuisine || 'Indian'}</span>
+          <span>{cuisine}</span>
           <span>•</span>
           <span>{restaurant.price || '₹₹'}</span>
         </div>

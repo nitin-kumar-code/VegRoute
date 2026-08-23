@@ -66,10 +66,21 @@ class RoutingService:
             
         route = reconstruct_path(prev, start_node, target_node)
         
+        # Convert node IDs to coordinates
+        route_coords = [
+            {"id": node, "lat": self.graph.node_data[node]["lat"], "lng": self.graph.node_data[node]["lng"]} 
+            for node in route if node in self.graph.node_data
+        ]
+        
+        visited_coords = [
+            {"id": node, "lat": self.graph.node_data[node]["lat"], "lng": self.graph.node_data[node]["lng"]} 
+            for node in visited_order if node in self.graph.node_data
+        ]
+        
         return {
-            "route": route,
+            "route": route_coords,
             "total_time_s": distances[target_node],
-            "visited_nodes": visited_order,
+            "visited_nodes": visited_coords,
             "execution_time_ms": execution_time_ms
         }
 

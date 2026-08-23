@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, MapPin, Navigation } from 'lucide-react';
 import LeafletMap from '../features/map/LeafletMap';
 import DistancePanel from '../features/map/DistancePanel';
 import { useMapStore } from '../context/useMapStore';
-import { MOCK_RESTAURANTS } from '../features/restaurants/restaurantData';
 
 /**
  * MapPage — Full-screen professional navigation interface.
@@ -13,16 +12,34 @@ export default function MapPage() {
   const setActiveRoute = useMapStore((state) => state.setActiveRoute);
   const activeRoute = useMapStore((state) => state.activeRoute);
   const [searchQuery, setSearchQuery] = useState('');
+  const [restaurants, setRestaurants] = useState([]);
 
-  const filtered = MOCK_RESTAURANTS.filter((r) =>
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/v1/restaurants/')
+      .then(res => res.json())
+      .then(data => setRestaurants(data))
+      .catch(err => console.error("Failed to load restaurants:", err));
+  }, []);
+
+  const filtered = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleFindRoute = (restaurant) => {
-    setActiveRoute({
-      route: ['N_001', 'N_003', 'N_005', 'N_007', restaurant.nearest_node],
-      visited_nodes: ['N_001', 'N_020', 'N_003', 'N_012', 'N_005', 'N_015', 'N_007', restaurant.nearest_node],
-    });
+  const handleFindRoute = async (restaurant) => {
+    const startNode = '9684592943'; // NIT Agartala
+    const targetNode = restaurant.nearest_node_id;
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/v1/route?source=${startNode}&destination=${targetNode}`);
+      if (response.ok) {
+        const data = await response.json();
+        setActiveRoute(data.data); // backend returns { success: true, data: {route, visited_nodes, total_time_s} }
+      } else {
+        console.error("Failed to fetch route");
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -53,26 +70,26 @@ export default function MapPage() {
 
         {/* Restaurant List */}
         <div className="flex-1 overflow-y-auto">
-          {filtered.map((r) => (
+          {filtered.map((r) => {
+            const purity = r.pure_veg ? 'pure_veg' : r.jain_available ? 'jain_friendly' : 'veg';
+            return (
             <div key={r.id}
               className="p-4 border-b border-border/50 hover:bg-surface-secondary/50 transition-colors cursor-pointer"
             >
               <div className="flex items-start justify-between mb-1.5">
                 <h3 className="text-sm font-semibold text-content-primary leading-snug">{r.name}</h3>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${
-                  r.purity === 'pure_veg' ? 'bg-status-success/10 text-status-success' :
-                  r.purity === 'jain_friendly' ? 'bg-status-warning/10 text-status-warning' :
+                  purity === 'pure_veg' ? 'bg-status-success/10 text-status-success' :
+                  purity === 'jain_friendly' ? 'bg-status-warning/10 text-status-warning' :
                   'bg-blue-50 text-blue-600'
                 }`}>
-                  {r.purity === 'pure_veg' ? 'Pure Veg' : r.purity === 'jain_friendly' ? 'Jain' : 'Veg'}
+                  {purity === 'pure_veg' ? 'Pure Veg' : purity === 'jain_friendly' ? 'Jain' : 'Veg'}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-content-secondary mb-3">
                 <span>⭐ {r.rating}</span>
                 <span>·</span>
-                <span>{r.cuisine}</span>
-                <span>·</span>
-                <span>{r.distance}</span>
+                <span>{r.distance ? r.distance : "3.2 km"}</span>
               </div>
               <button
                 onClick={() => handleFindRoute(r)}
@@ -83,7 +100,7 @@ export default function MapPage() {
                 Calculate Route
               </button>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 

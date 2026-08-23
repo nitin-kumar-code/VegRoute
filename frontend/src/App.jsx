@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -5,12 +6,19 @@ import LandingPage from './pages/LandingPage';
 import MapPage from './pages/MapPage';
 import ExplorePage from './pages/ExplorePage';
 import AlgorithmVisualizerPage from './pages/AlgorithmVisualizerPage';
+import { useMapStore } from './context/useMapStore';
 
 /**
  * App — Root shell. Navbar is persistent, Footer shows on all pages except /map.
  * MapPage gets special treatment: no footer, full-height layout.
  */
 function App() {
+  const fetchRestaurants = useMapStore((state) => state.fetchRestaurants);
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, [fetchRestaurants]);
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-surface-warm text-content-primary flex flex-col">
