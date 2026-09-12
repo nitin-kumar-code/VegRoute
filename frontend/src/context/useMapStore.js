@@ -30,10 +30,15 @@ export const useMapStore = create((set) => ({
 
   setStartNode: (node) => set({ startNode: node }),
   setTargetNode: (node) => set({ targetNode: node }),
+  setTargetRestaurant: (restaurant) => set({ targetRestaurant: restaurant }),
   
   setActiveRoute: (routeData) => set({ 
     activeRoute: routeData.route, 
-    visitedNodes: routeData.visited_nodes || [] 
+    visitedNodes: routeData.visited_nodes || [],
+    routeInfo: {
+      time: routeData.total_time_s,
+      distance: (routeData.total_time_s * 10) / 1000 // Approximate distance in km based on time or we can calculate it exactly if we passed it back from API
+    }
   }),
   
   setIsRouting: (status) => set({ isRouting: status }),
@@ -43,7 +48,9 @@ export const useMapStore = create((set) => ({
   resetRoute: () => set({ 
     startNode: null, 
     targetNode: null, 
+    targetRestaurant: null,
     activeRoute: null, 
-    visitedNodes: [] 
+    visitedNodes: [],
+    routeInfo: null
   })
 }));

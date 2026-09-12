@@ -5,8 +5,8 @@ import FilterPill from '../components/ui/FilterPill';
 import RestaurantCard from '../features/restaurants/RestaurantCard';
 import { useMapStore } from '../context/useMapStore';
 
-const FILTERS = ['All', 'Pure Veg', 'South Indian', 'North Indian', 'Jain', 'Budget (₹)', 'Highly Rated (4.3+)'];
-const SORTS = ['Default', 'Nearest', 'Highest Rated', 'Cheapest'];
+const FILTERS = ['All', 'Pure Veg', 'Veg Friendly', 'Jain', 'North Indian', 'South Indian', 'Bengali', 'Tripuri', 'Budget', 'Mid-range', 'Highly Rated', 'Open Now'];
+const SORTS = ['Default', 'Nearest', 'Highest Rated', 'Most Reviewed', 'Lowest Price', 'Name A-Z'];
 
 export default function ExplorePage() {
   const restaurants = useMapStore((state) => state.restaurants);
@@ -25,11 +25,16 @@ export default function ExplorePage() {
 
       switch (activeFilter) {
         case 'Pure Veg': return purity === 'pure_veg';
+        case 'Veg Friendly': return purity === 'veg';
         case 'Jain': return purity === 'jain_friendly';
         case 'South Indian': return r.south_indian;
         case 'North Indian': return r.north_indian;
-        case 'Budget (₹)': return r.price === '₹';
-        case 'Highly Rated (4.3+)': return r.rating >= 4.3;
+        case 'Bengali': return r.bengali_tripuri;
+        case 'Tripuri': return r.bengali_tripuri;
+        case 'Budget': return r.price === 'Budget' || r.price === '₹';
+        case 'Mid-range': return r.price === 'Mid-range' || r.price === '₹₹';
+        case 'Highly Rated': return r.rating >= 4.3;
+        case 'Open Now': return true; // Mock implementation for Open Now
         default: return true; // 'All'
       }
     });
@@ -38,14 +43,15 @@ export default function ExplorePage() {
     results.sort((a, b) => {
       switch (activeSort) {
         case 'Nearest':
-          // Extract float from strings like "1.2 km"
-          return (a.distance ? parseFloat(a.distance) : 1) - (b.distance ? parseFloat(b.distance) : 1);
+          return (a.distance_value || 0) - (b.distance_value || 0);
         case 'Highest Rated':
-          // Descending order for rating
-          return b.rating - a.rating;
-        case 'Cheapest':
-          // Compare price string length ('₹' < '₹₹' < '₹₹₹')
+          return (b.rating || 0) - (a.rating || 0);
+        case 'Most Reviewed':
+          return (b.rating_count || 0) - (a.rating_count || 0);
+        case 'Lowest Price':
           return (a.price ? a.price.length : 0) - (b.price ? b.price.length : 0);
+        case 'Name A-Z':
+          return a.name.localeCompare(b.name);
         default:
           return 0; // 'Default' maintains original array order
       }

@@ -67,14 +67,17 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
 
         <div className="flex gap-2">
           <Link
-            to="/map"
+            to={`/map?destination=${restaurant.id}`}
             className="btn-primary text-xs px-4 py-2 flex-1 text-center"
           >
             Find Route
           </Link>
-          <button className="btn-secondary text-xs px-4 py-2">
+          <Link
+            to={`/restaurant/${restaurant.id}`}
+            className="btn-secondary text-xs px-4 py-2 text-center"
+          >
             View Details
-          </button>
+          </Link>
         </div>
       </div>
     </div>

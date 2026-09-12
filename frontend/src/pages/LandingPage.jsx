@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Route as RouteIcon, Network, Search, Leaf, Navigation, Clock, Star, GitBranch, ArrowRight, Microscope } from 'lucide-react';
+import { MapPin, Navigation, Compass, Search, Leaf, ShieldCheck, Star, GitBranch, ArrowRight, Network, Clock, Microscope } from 'lucide-react';
 import SectionHeading from '../components/ui/SectionHeading';
 import StatCard from '../components/ui/StatCard';
 import RestaurantCard from '../features/restaurants/RestaurantCard';
-import { MOCK_RESTAURANTS } from '../features/restaurants/restaurantData';
+import { useMapStore } from '../context/useMapStore';
 
 /**
  * LandingPage — The premium first impression of VegRoute.
@@ -11,6 +11,16 @@ import { MOCK_RESTAURANTS } from '../features/restaurants/restaurantData';
  * Composed of: Hero → Features → Restaurant Preview → How It Works → About
  */
 export default function LandingPage() {
+  const restaurants = useMapStore((state) => state.restaurants);
+  
+  // Calculate dynamic stats
+  const totalRestaurants = restaurants.length;
+  const pureVegCount = restaurants.filter(r => r.pure_veg).length;
+  const vegFriendlyCount = totalRestaurants - pureVegCount;
+  
+  // Get top 3 featured spots (most reviewed or highest rated)
+  const featuredRestaurants = [...restaurants].sort((a, b) => b.rating_count - a.rating_count).slice(0, 3);
+
   return (
     <div className="min-h-screen">
       {/* ====== HERO SECTION ====== */}
@@ -43,11 +53,29 @@ export default function LandingPage() {
                 Open Map
               </Link>
             </div>
+            
+            {/* Dynamic Dataset Stats */}
+            <div className="flex items-center gap-4 text-sm mt-8 border-t border-border pt-6">
+              <div className="flex flex-col">
+                <span className="font-bold text-lg text-content-primary">{totalRestaurants}</span>
+                <span className="text-content-secondary">Restaurants</span>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="flex flex-col">
+                <span className="font-bold text-lg text-content-primary">{pureVegCount}</span>
+                <span className="text-content-secondary flex items-center gap-1"><ShieldCheck size={14} className="text-status-success"/> Pure Veg</span>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="flex flex-col">
+                <span className="font-bold text-lg text-content-primary">{vegFriendlyCount}</span>
+                <span className="text-content-secondary flex items-center gap-1"><Leaf size={14} className="text-status-warning"/> Veg Friendly</span>
+              </div>
+            </div>
 
-            <p className="text-sm text-content-secondary flex items-center gap-1.5">
+            <div className="mt-8 flex items-center gap-2 text-sm font-semibold text-content-secondary bg-white px-4 py-2 rounded-xl border border-border shadow-sm max-w-max">
               <Network size={14} className="text-brand-accent" />
-              Powered by Graph Algorithms
-            </p>
+              Running on Dijkstra's Algorithm
+            </div>
           </div>
 
           {/* Right: Stylized Map/Graph Visual */}
@@ -145,7 +173,7 @@ export default function LandingPage() {
             subtitle="Find the right place based on distance, rating, cuisine, and budget."
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MOCK_RESTAURANTS.slice(0, 3).map((r) => (
+            {featuredRestaurants.map((r) => (
               <RestaurantCard key={r.id} restaurant={r} />
             ))}
           </div>

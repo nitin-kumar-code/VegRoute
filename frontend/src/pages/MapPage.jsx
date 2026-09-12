@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, MapPin, Navigation } from 'lucide-react';
 import LeafletMap from '../features/map/LeafletMap';
 import DistancePanel from '../features/map/DistancePanel';
@@ -13,13 +14,23 @@ export default function MapPage() {
   const activeRoute = useMapStore((state) => state.activeRoute);
   const [searchQuery, setSearchQuery] = useState('');
   const [restaurants, setRestaurants] = useState([]);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/v1/restaurants/')
       .then(res => res.json())
-      .then(data => setRestaurants(data))
+      .then(data => {
+        setRestaurants(data);
+        const destId = searchParams.get('destination');
+        if (destId) {
+          const destRestaurant = data.find(r => r.id === parseInt(destId));
+          if (destRestaurant) {
+            handleFindRoute(destRestaurant);
+          }
+        }
+      })
       .catch(err => console.error("Failed to load restaurants:", err));
-  }, []);
+  }, [searchParams]);
 
   const filtered = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -29,6 +40,8 @@ export default function MapPage() {
     const startNode = '9684592943'; // NIT Agartala
     const targetNode = restaurant.nearest_node_id;
     
+    useMapStore.getState().setTargetRestaurant(restaurant);
+
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/v1/route?source=${startNode}&destination=${targetNode}`);
       if (response.ok) {

@@ -5,6 +5,7 @@ import Footer from './components/layout/Footer';
 import LandingPage from './pages/LandingPage';
 import MapPage from './pages/MapPage';
 import ExplorePage from './pages/ExplorePage';
+import RestaurantDetailsPage from './pages/RestaurantDetailsPage';
 import AlgorithmVisualizerPage from './pages/AlgorithmVisualizerPage';
 import { useMapStore } from './context/useMapStore';
 
@@ -28,6 +29,7 @@ function App() {
           <Routes>
             <Route path="/" element={<><LandingPage /><Footer /></>} />
             <Route path="/explore" element={<><ExplorePage /><Footer /></>} />
+            <Route path="/restaurant/:id" element={<><RestaurantDetailsPage /><Footer /></>} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/visualizer" element={<><AlgorithmVisualizerPage /><Footer /></>} />
             <Route path="/admin_secret_dashboard" element={

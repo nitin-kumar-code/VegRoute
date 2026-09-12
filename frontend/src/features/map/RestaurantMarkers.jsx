@@ -1,6 +1,5 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { MOCK_RESTAURANTS } from '../restaurants/restaurantData';
 
 /**
  * RestaurantMarkers — Color-coded restaurant pins on the Leaflet map.
