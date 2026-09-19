@@ -1,0 +1,10 @@
+--- frontend/src/features/map/LeafletMap.jsx
++++ frontend/src/features/map/LeafletMap.jsx
+@@ -42,6 +42,7 @@
+       touchZoom={true}
+       doubleClickZoom={true}
+       gestureHandling={true}
++      keyboard={true}
+     >
+       {/* 
+         TileLayer: The actual map imagery.

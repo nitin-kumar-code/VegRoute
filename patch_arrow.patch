@@ -1,0 +1,13 @@
+--- frontend/src/features/map/DistancePanel.jsx
++++ frontend/src/features/map/DistancePanel.jsx
+@@ -28,7 +28,9 @@
+       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-sm px-4">
+         {/* Top Floating Instruction could go here, but prompt asked for a bottom panel mainly, let's build the integrated panel */}
+         <div className="bg-brand-900 text-white rounded-t-2xl shadow-xl px-6 py-4 flex items-center gap-4">
+-          <ArrowLeft size={24} className="opacity-80" />
++          <button onClick={stopNavigation} className="hover:opacity-100 transition-opacity">
++            <ArrowLeft size={24} className="opacity-80" />
++          </button>
+           <div className="flex-1">
+             <h2 className="text-xl font-bold">{rawRouteData.destination.name}</h2>
+           </div>

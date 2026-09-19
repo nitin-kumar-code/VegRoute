@@ -1,67 +1,62 @@
-import { Polyline, CircleMarker, Tooltip } from 'react-leaflet';
+import { Polyline } from 'react-leaflet';
 import { useMapStore } from '../../context/useMapStore';
 
 /**
- * RouteLayer — Renders the Dijkstra algorithm output on the map.
- * Color language:
- *   - #B8C5BB (graph-edge): Unvisited
- *   - #12372A (graph-node/brand-900): Currently processing
- *   - #A8D66D (brand-light): Visited/explored
- *   - #7CB342 (brand-accent): Final shortest path
+ * RouteLayer — Clean Navigation Visualization
+ * Renders the route polylines cleanly. No graph nodes shown!
  */
-
 export default function RouteLayer() {
   const activeRoute = useMapStore((state) => state.activeRoute);
-  const visitedNodes = useMapStore((state) => state.visitedNodes);
+  const isNavigating = useMapStore((state) => state.isNavigating);
+  const navState = useMapStore((state) => state.navState);
 
-  // routeCoords should be an array of [lat, lng] arrays for Polyline
-  const routeCoords = activeRoute
-    ? activeRoute.map((node) => [node.lat, node.lng])
-    : [];
+  if (!activeRoute) return null;
 
-  const visitedCoords = visitedNodes
-    ? visitedNodes.map((node) => ({ id: node.id, coords: [node.lat, node.lng] }))
-    : [];
+  // When not navigating, just show the whole route cleanly.
+  if (!isNavigating) {
+    const routeCoords = activeRoute.map((node) => [node.lat, node.lng]);
+    return (
+      <>
+        {/* Route shadow glow */}
+        <Polyline
+          positions={routeCoords}
+          pathOptions={{ color: '#007AFF', weight: 8, opacity: 0.3, lineCap: 'round', lineJoin: 'round' }}
+        />
+        {/* Route main line */}
+        <Polyline
+          positions={routeCoords}
+          pathOptions={{ color: '#007AFF', weight: 5, opacity: 1, lineCap: 'round', lineJoin: 'round' }}
+        />
+      </>
+    );
+  }
 
-  if (routeCoords.length === 0 && visitedCoords.length === 0) return null;
+  // When navigating, show travelled vs remaining
+  const travelledCoords = navState.travelledRoute.map(n => [n.lat, n.lng]);
+  const remainingCoords = navState.remainingRoute.map(n => [n.lat, n.lng]);
 
   return (
     <>
-      {/* Visited nodes — lime green circles */}
-      {visitedCoords.map((node, index) => (
-        <CircleMarker
-          key={`visited-${node.id}`}
-          center={node.coords}
-          radius={5}
-          pathOptions={{
-            color: '#A8D66D',
-            fillColor: '#A8D66D',
-            fillOpacity: 0.7,
-            weight: 2,
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -8]} permanent={false}>
-            <span style={{ fontSize: '11px', fontFamily: 'Inter, system-ui' }}>
-              Step {index + 1}: <strong>{node.id}</strong>
-            </span>
-          </Tooltip>
-        </CircleMarker>
-      ))}
-
-      {/* Route shadow glow */}
-      {routeCoords.length > 1 && (
+      {/* Travelled Route (Grey/Faded) */}
+      {travelledCoords.length > 1 && (
         <Polyline
-          positions={routeCoords}
-          pathOptions={{ color: '#7CB342', weight: 10, opacity: 0.25, lineCap: 'round', lineJoin: 'round' }}
+          positions={travelledCoords}
+          pathOptions={{ color: '#9CA3AF', weight: 5, opacity: 0.8, lineCap: 'round', lineJoin: 'round', dashArray: '5, 10' }}
         />
       )}
 
-      {/* Route main line */}
-      {routeCoords.length > 1 && (
-        <Polyline
-          positions={routeCoords}
-          pathOptions={{ color: '#7CB342', weight: 5, opacity: 1, lineCap: 'round', lineJoin: 'round' }}
-        />
+      {/* Remaining Route (Active Blue) */}
+      {remainingCoords.length > 1 && (
+        <>
+          <Polyline
+            positions={remainingCoords}
+            pathOptions={{ color: '#007AFF', weight: 8, opacity: 0.3, lineCap: 'round', lineJoin: 'round' }}
+          />
+          <Polyline
+            positions={remainingCoords}
+            pathOptions={{ color: '#007AFF', weight: 5, opacity: 1, lineCap: 'round', lineJoin: 'round' }}
+          />
+        </>
       )}
     </>
   );

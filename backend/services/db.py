@@ -99,7 +99,7 @@ class DatabaseService:
         with self._get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT r.restaurant_id, r.name, r.pure_veg, r.lat, r.lng, 
+                    SELECT r.restaurant_id, r.name, r.pure_veg, r.lat, r.lng, r.nearest_node_id,
                            s.trust_score, s.rating_avg, s.rating_count
                     FROM restaurants r
                     LEFT JOIN restaurant_stats s ON r.restaurant_id = s.restaurant_id

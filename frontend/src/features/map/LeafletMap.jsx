@@ -3,7 +3,12 @@ import 'leaflet/dist/leaflet.css';
 import UserMarker from './UserMarker';
 import RestaurantMarkers from './RestaurantMarkers';
 import RouteLayer from './RouteLayer';
+import SourceMarker from './SourceMarker';
 import MapController from './MapController';
+import { GestureHandling } from 'leaflet-gesture-handling';
+import 'leaflet-gesture-handling/dist/leaflet-gesture-handling.css';
+
+L.Map.addInitHook('addHandler', 'gestureHandling', GestureHandling);
 
 /**
  * LeafletMap — The Core Map Container
@@ -31,6 +36,12 @@ export default function LeafletMap() {
       zoomControl={false}             // We add our own ZoomControl below
       className="w-full h-full z-0"   // Fill the parent container, sit behind UI overlays
       attributionControl={true}       // Required by OSM license
+      dragging={true}
+      scrollWheelZoom={true}
+      touchZoom={true}
+      doubleClickZoom={true}
+      gestureHandling={true}
+      keyboard={true}
     >
       {/* 
         TileLayer: The actual map imagery.
@@ -50,6 +61,9 @@ export default function LeafletMap() {
 
       {/* Syncs the Zustand store's camera state with the Leaflet map instance */}
       <MapController />
+
+      {/* The starting location */}
+      <SourceMarker />
 
       {/* The user's live GPS position */}
       <UserMarker />

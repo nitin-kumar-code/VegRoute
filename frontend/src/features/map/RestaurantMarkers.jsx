@@ -82,10 +82,16 @@ const RestaurantPopup = ({ restaurant, purity }) => {
 
 export default function RestaurantMarkers() {
   const restaurants = useMapStore((state) => state.restaurants);
+  const targetRestaurant = useMapStore((state) => state.targetRestaurant);
+  const activeRoute = useMapStore((state) => state.activeRoute);
+  
+  const markersToRender = (activeRoute && targetRestaurant) 
+    ? restaurants.filter(r => r.id === targetRestaurant.id)
+    : restaurants;
   
   return (
     <>
-      {restaurants.map((restaurant) => {
+      {markersToRender.map((restaurant) => {
         const purity = restaurant.pure_veg ? 'pure_veg' : restaurant.jain_available ? 'jain_friendly' : 'veg';
         return (
         <Marker
