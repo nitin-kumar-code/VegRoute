@@ -1,5 +1,8 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import restaurantImages from '../restaurants/data/restaurantImages';
+import { useMapStore } from '../../context/useMapStore';
+import { useState } from 'react';
 
 /**
  * RestaurantMarkers — Color-coded restaurant pins on the Leaflet map.
@@ -36,7 +39,46 @@ const PURITY_LABELS = {
   veg: 'Veg',
 };
 
-import { useMapStore } from '../../context/useMapStore';
+const RestaurantPopup = ({ restaurant, purity }) => {
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = restaurantImages[restaurant.id] || restaurant.image || '/assets/restaurants/fallback.jpg';
+
+  return (
+    <Popup>
+      <div style={{ minWidth: '180px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ width: '100%', height: '100px', marginBottom: '8px', borderRadius: '8px', overflow: 'hidden', background: '#f4f4f4' }}>
+          {!imageError ? (
+             <img src={imageUrl} alt={restaurant.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImageError(true)} loading="lazy" />
+          ) : (
+             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📍</div>
+          )}
+        </div>
+        <div style={{ fontWeight: 700, fontSize: '14px', color: '#17201B', marginBottom: '4px' }}>
+          {restaurant.name}
+        </div>
+        <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+          <span style={{
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: 600,
+            background: purity === 'pure_veg' ? '#3E8E5B20' : '#D99A2B20',
+            color: purity === 'pure_veg' ? '#3E8E5B' : '#D99A2B',
+          }}>
+            {PURITY_LABELS[purity]}
+          </span>
+        </div>
+        <div style={{ fontSize: '12px', color: '#66736A' }}>
+          ⭐ {restaurant.rating} &nbsp;·&nbsp; 🛡️ {restaurant.trust_score || 0} verifications
+        </div>
+        <div style={{ fontSize: '11px', color: '#66736A', marginTop: '6px' }}>
+          Graph Node: <code style={{ background: '#EEF3EC', padding: '1px 4px', borderRadius: '4px' }}>{restaurant.nearest_node_id}</code>
+        </div>
+      </div>
+    </Popup>
+  );
+};
 
 export default function RestaurantMarkers() {
   const restaurants = useMapStore((state) => state.restaurants);
@@ -51,32 +93,7 @@ export default function RestaurantMarkers() {
           position={[restaurant.lat, restaurant.lng]}
           icon={createRestaurantIcon(purity)}
         >
-          <Popup>
-            <div style={{ minWidth: '180px', fontFamily: 'Inter, system-ui, sans-serif' }}>
-              <div style={{ fontWeight: 700, fontSize: '14px', color: '#17201B', marginBottom: '4px' }}>
-                {restaurant.name}
-              </div>
-              <div style={{ fontSize: '12px', marginBottom: '4px' }}>
-                <span style={{
-                  display: 'inline-block',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  background: purity === 'pure_veg' ? '#3E8E5B20' : '#D99A2B20',
-                  color: purity === 'pure_veg' ? '#3E8E5B' : '#D99A2B',
-                }}>
-                  {PURITY_LABELS[purity]}
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#66736A' }}>
-                ⭐ {restaurant.rating} &nbsp;·&nbsp; 🛡️ {restaurant.trust_score || 0} verifications
-              </div>
-              <div style={{ fontSize: '11px', color: '#66736A', marginTop: '6px' }}>
-                Graph Node: <code style={{ background: '#EEF3EC', padding: '1px 4px', borderRadius: '4px' }}>{restaurant.nearest_node_id}</code>
-              </div>
-            </div>
-          </Popup>
+          <RestaurantPopup restaurant={restaurant} purity={purity} />
         </Marker>
       )})}
     </>

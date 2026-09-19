@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star, MapPin, Clock, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import restaurantImages, { restaurantImagePositions } from './data/restaurantImages';
 
 const PURITY_BADGE = {
   pure_veg: { label: 'Pure Veg', color: 'bg-status-success/10 text-status-success' },
@@ -13,14 +14,21 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
   const badge = PURITY_BADGE[purity] || PURITY_BADGE.pure_veg;
   const cuisine = restaurant.south_indian ? 'South Indian' : restaurant.north_indian ? 'North Indian' : restaurant.bengali_tripuri ? 'Bengali' : 'Indian';
 
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = restaurantImages[restaurant.id] || restaurant.image || '/assets/restaurants/fallback.jpg';
+  const objectPosition = restaurantImagePositions[restaurant.id] || 'center';
+
   return (
     <div className="card overflow-hidden group">
       {/* Image */}
       <div className="relative h-44 bg-surface-secondary overflow-hidden">
-        {restaurant.image ? (
+        {!imageError ? (
           <img 
-            src={restaurant.image} 
+            src={imageUrl} 
             alt={restaurant.name}
+            loading="lazy"
+            onError={() => setImageError(true)}
+            style={{ objectPosition }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

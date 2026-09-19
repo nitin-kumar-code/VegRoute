@@ -1,12 +1,16 @@
 import { useParams, Link } from 'react-router-dom';
 import { useMapStore } from '../context/useMapStore';
 import { MapPin, Navigation, Star, Clock, Info, ShieldCheck, Leaf } from 'lucide-react';
+import restaurantImages from '../features/restaurants/data/restaurantImages';
+import { useState } from 'react';
 
 export default function RestaurantDetailsPage() {
   const { id } = useParams();
   const restaurants = useMapStore((state) => state.restaurants);
   
-  const restaurant = restaurants.find(r => r.id === parseInt(id));
+  const restaurant = restaurants.find(r => r.id === id);
+
+  const [imageError, setImageError] = useState(false);
 
   if (!restaurant) {
     return (
@@ -20,6 +24,8 @@ export default function RestaurantDetailsPage() {
   const isJainVerified = purity === 'pure_veg' && (restaurant.name === 'Swastik Veg' || restaurant.name === 'JAGANNATHS PRASADAM');
   const cuisine = restaurant.south_indian ? 'South Indian' : restaurant.north_indian ? 'North Indian' : restaurant.bengali_tripuri ? 'Bengali' : 'Indian';
 
+  const imageUrl = restaurantImages[restaurant.id] || restaurant.image || '/assets/restaurants/fallback.jpg';
+
   return (
     <div className="min-h-screen py-12 bg-surface-warm">
       <div className="section-container max-w-4xl">
@@ -29,8 +35,8 @@ export default function RestaurantDetailsPage() {
         
         {/* Header Image */}
         <div className="relative h-64 md:h-96 rounded-3xl overflow-hidden mb-8 shadow-sm">
-          {restaurant.image ? (
-            <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
+          {!imageError ? (
+            <img src={imageUrl} alt={restaurant.name} onError={() => setImageError(true)} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-surface-secondary flex items-center justify-center text-content-secondary/30">
               <MapPin size={64} />

@@ -2,8 +2,17 @@ from fastapi import APIRouter
 from services.db import db_service
 from services.routing_service import routing_service
 import psycopg2.extras
+import math
 
 router = APIRouter()
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000  # radius of Earth in meters
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 @router.get("/")
 def get_all_restaurants():
@@ -38,7 +47,7 @@ def get_all_restaurants():
                         dist = 0
                         route = result.get("route", [])
                         for i in range(len(route)-1):
-                            dist += routing_service.graph._haversine(route[i]["lat"], route[i]["lng"], route[i+1]["lat"], route[i+1]["lng"])
+                            dist += haversine(route[i]["lat"], route[i]["lng"], route[i+1]["lat"], route[i+1]["lng"])
                         r["distance"] = f"{(dist/1000):.1f} km"
                         r["distance_value"] = dist
                     else:
