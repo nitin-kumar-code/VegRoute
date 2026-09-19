@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 import restaurantImages, { restaurantImagePositions } from './data/restaurantImages';
 
 const PURITY_BADGE = {
-  pure_veg: { label: 'Pure Veg', color: 'bg-status-success/10 text-status-success' },
-  jain_friendly: { label: 'Jain Friendly', color: 'bg-status-warning/10 text-status-warning' },
-  veg: { label: 'Veg', color: 'bg-blue-50 text-blue-600' },
+  pure_veg: { label: 'Pure Veg', color: 'bg-status-success text-white shadow-sm border border-status-success/20' },
+  jain_friendly: { label: 'Jain Friendly', color: 'bg-status-warning text-white shadow-sm border border-status-warning/20' },
+  veg: { label: 'Veg', color: 'bg-blue-600 text-white shadow-sm border border-blue-600/20' },
 };
 
 const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
@@ -62,7 +62,7 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
           <span>•</span>
           <span>{cuisine}</span>
           <span>•</span>
-          <span>{restaurant.price || '₹₹'}</span>
+          <span>{restaurant.price?.toLowerCase() === 'budget' ? '₹' : restaurant.price?.toLowerCase() === 'mid-range' ? '₹₹' : (restaurant.price || '₹₹')}</span>
         </div>
 
         <div className="flex items-center gap-1.5 text-xs text-content-secondary mb-4">

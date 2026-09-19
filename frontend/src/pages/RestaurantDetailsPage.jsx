@@ -111,7 +111,7 @@ export default function RestaurantDetailsPage() {
                 </div>
                 <div className="flex gap-3">
                   <div className="w-[18px] text-center font-bold text-content-secondary shrink-0">₹</div>
-                  <div className="text-sm font-semibold">{restaurant.price || 'Mid-range'}</div>
+                  <div className="text-sm font-semibold">{restaurant.price?.toLowerCase() === 'budget' ? 'Budget' : restaurant.price?.toLowerCase() === 'mid-range' ? 'Mid-range' : (restaurant.price || 'Mid-range')}</div>
                 </div>
               </div>
               

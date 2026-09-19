@@ -31,8 +31,8 @@ export default function ExplorePage() {
         case 'North Indian': return r.north_indian;
         case 'Bengali': return r.bengali_tripuri;
         case 'Tripuri': return r.bengali_tripuri;
-        case 'Budget': return r.price === 'Budget' || r.price === '₹';
-        case 'Mid-range': return r.price === 'Mid-range' || r.price === '₹₹';
+        case 'Budget': return r.price?.toLowerCase() === 'budget' || r.price === '₹';
+        case 'Mid-range': return r.price?.toLowerCase() === 'mid-range' || r.price === '₹₹';
         case 'Highly Rated': return r.rating >= 4.3;
         case 'Open Now': return true; // Mock implementation for Open Now
         default: return true; // 'All'

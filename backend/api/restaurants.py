@@ -42,7 +42,8 @@ def get_all_restaurants():
                     result = routing_service.get_shortest_path(nit_agartala_node, target)
                     
                     if result is not None and "error" not in result:
-                        r["distance_m"] = result.get("total_time_s", 0) * 10 
+                        total_time_s = result.get("total_time_s", 0)
+                        r["distance_m"] = total_time_s * 10 
                         
                         dist = 0
                         route = result.get("route", [])
@@ -50,12 +51,15 @@ def get_all_restaurants():
                             dist += haversine(route[i]["lat"], route[i]["lng"], route[i+1]["lat"], route[i+1]["lng"])
                         r["distance"] = f"{(dist/1000):.1f} km"
                         r["distance_value"] = dist
+                        r["time"] = f"{math.ceil(total_time_s / 60)} min"
                     else:
                         r["distance"] = "Unknown"
                         r["distance_value"] = 999999
+                        r["time"] = "Unknown"
                 except Exception as e:
                     r["distance"] = "Unknown"
                     r["distance_value"] = 999999
+                    r["time"] = "Unknown"
                     print(f"Error routing to {r['name']}: {e}")
             
             return restaurants
