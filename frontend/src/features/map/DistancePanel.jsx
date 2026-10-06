@@ -12,6 +12,7 @@ export default function DistancePanel() {
   const startNavigation = useMapStore((state) => state.startNavigation);
   const stopNavigation = useMapStore((state) => state.stopNavigation);
   const recenterOnUser = useMapStore((state) => state.recenterOnUser);
+  const locationError = navState.error;
 
   if (!activeRoute || !rawRouteData) return null;
 
@@ -49,7 +50,7 @@ export default function DistancePanel() {
           <div className="flex justify-between items-end mb-5">
             <div>
               <div className="text-3xl font-extrabold text-brand-900">
-                {navState.remainingDistanceKm.toFixed(2)} <span className="text-lg font-medium text-content-secondary">km</span>
+                {navState.status === 'locating' ? 'Locating…' : `${navState.remainingDistanceKm.toFixed(2)} km`}
               </div>
               <div className="text-lg font-semibold text-status-warning mt-1">
                 ~{navState.remainingTimeMin} min
@@ -74,9 +75,9 @@ export default function DistancePanel() {
             </button>
           </div>
           
-          {navState.status === 'denied' && (
+          {locationError && (
             <div className="mt-4 p-3 bg-status-warning/10 text-status-warning text-xs font-semibold rounded-lg text-center">
-              Location access is required for live navigation. You can still view the calculated route on the map.
+              {locationError} The route preview is still available; press Exit to return to it.
             </div>
           )}
         </div>

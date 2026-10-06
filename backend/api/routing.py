@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import List
 from services.routing_service import routing_service
@@ -37,11 +37,34 @@ def get_shortest_route(source: str, destination: str):
     }
 
 @router.get("/shortest")
-def get_shortest_route_dijkstra(destination: str, source: str = "NIT"):
+def get_shortest_route_dijkstra(
+    destination: str,
+    source: str = "NIT",
+    lat: float | None = Query(default=None, ge=-90, le=90),
+    lng: float | None = Query(default=None, ge=-180, le=180),
+):
     """
     The updated explicit Dijkstra implementation for calculating the route.
     """
-    if source == "NIT":
+    if (lat is None) != (lng is None):
+        raise HTTPException(status_code=400, detail="Both latitude and longitude are required for live navigation.")
+    live_location = lat is not None and lng is not None
+    if not routing_service.graph:
+        routing_service.load_graph()
+
+    if live_location:
+        if not routing_service.graph.node_data:
+            raise HTTPException(status_code=503, detail="The road graph is unavailable.")
+        source_node = min(
+            routing_service.graph.node_data,
+            key=lambda node: haversine(
+                lat, lng,
+                routing_service.graph.node_data[node]["lat"],
+                routing_service.graph.node_data[node]["lng"],
+            ),
+        )
+        source_name = "Your current location"
+    elif source == "NIT":
         source_node = "9684592943"
         source_name = "NIT Agartala"
     else:
@@ -56,11 +79,8 @@ def get_shortest_route_dijkstra(destination: str, source: str = "NIT"):
     if not target_node:
         raise HTTPException(status_code=400, detail="Unable to calculate route. No connected road path exists for this restaurant.")
 
-    if not routing_service.graph:
-        routing_service.load_graph()
-
     if not routing_service.graph.has_node(source_node):
-        raise HTTPException(status_code=400, detail="NIT has no graph connection")
+        raise HTTPException(status_code=400, detail="The route source has no graph connection")
     if not routing_service.graph.has_node(target_node):
         raise HTTPException(status_code=400, detail="Unable to calculate route. No connected road path exists for this restaurant.")
 
@@ -91,8 +111,15 @@ def get_shortest_route_dijkstra(destination: str, source: str = "NIT"):
             
     time_s = distances[target_node]
     
+    if live_location:
+        # Keep the user's exact GPS fix as the route origin; Dijkstra still begins
+        # at the nearest node in the road graph.
+        path_coords.insert(0, {"id": "gps-origin", "lat": lat, "lng": lng})
+        nd = routing_service.graph.node_data[source_node]
+        dist_m += haversine(lat, lng, nd["lat"], nd["lng"])
+
     return {
-        "source": {"name": source_name, "nodeId": int(source_node)},
+        "source": {"name": source_name, "nodeId": int(source_node), **({"lat": lat, "lng": lng} if live_location else {})},
         "destination": {"restaurantId": destination, "name": restaurant["name"], "nodeId": int(target_node)},
         "algorithm": "Dijkstra",
         "distanceKm": round(dist_m / 1000, 2),

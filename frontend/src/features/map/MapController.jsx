@@ -8,6 +8,7 @@ export default function MapController() {
   const mapCenter = useMapStore((state) => state.mapCenter);
   const mapZoom = useMapStore((state) => state.mapZoom);
   const activeRoute = useMapStore((state) => state.activeRoute);
+  const isNavigating = useMapStore((state) => state.isNavigating);
 
   useEffect(() => {
     if (mapCenter && mapZoom) {
@@ -17,7 +18,7 @@ export default function MapController() {
 
   // When a new route is calculated, fit the map bounds to show the entire path!
   useEffect(() => {
-    if (activeRoute && activeRoute.length > 0) {
+    if (!isNavigating && activeRoute && activeRoute.length > 0) {
       const latlngs = activeRoute.map(node => [node.lat, node.lng]);
       const bounds = L.latLngBounds(latlngs);
       
@@ -28,7 +29,7 @@ export default function MapController() {
 
       map.flyToBounds(bounds, { duration: 1.5, ...paddingOptions });
     }
-  }, [map, activeRoute]);
+  }, [map, activeRoute, isNavigating]);
 
   return null;
 }

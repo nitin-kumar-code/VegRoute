@@ -3,8 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import UserMarker from './UserMarker';
 import RestaurantMarkers from './RestaurantMarkers';
 import RouteLayer from './RouteLayer';
-import SourceMarker from './SourceMarker';
 import MapController from './MapController';
+import { useMapStore } from '../../context/useMapStore';
 import { GestureHandling } from 'leaflet-gesture-handling';
 import 'leaflet-gesture-handling/dist/leaflet-gesture-handling.css';
 
@@ -61,9 +61,6 @@ export default function LeafletMap() {
 
       {/* Syncs the Zustand store's camera state with the Leaflet map instance */}
       <MapController />
-
-      {/* The starting location */}
-      <SourceMarker />
 
       {/* The user's live GPS position */}
       <UserMarker />
